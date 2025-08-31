@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CAFE KAFKA</title>
+
+  <!-- Google Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary-orange: #ff6b35;
+      --secondary-orange: #ff8c42;
+      --light-orange: #ffb366;
+      --dark-orange: #e55a2b;
+      --cream: #fff8f0;
+      --brown: #8b4513;
+      --dark-brown: #5d2f0a;
+      --white: #ffffff;
+      --light-gray: #f5f5f5;
+      --shadow: rgba(255, 107, 53, 0.2);
+      --text-dark: #2c1810;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      color: var(--text-dark);
+      background: linear-gradient(135deg, var(--cream) 0%, #fff 100%);
+      overflow-x: hidden;
+    }
+
+    /* Animated Background */
+    .animated-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: linear-gradient(-45deg, var(--cream), #fff, var(--light-orange), var(--cream));
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+
+    .animated-bg::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(circle at 25% 25%, var(--shadow) 1px, transparent 1px),
+        radial-gradient(circle at 75% 75%, var(--shadow) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-10px, -10px); }
+    }
+
+    /* Header */
+    #header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      transition: all 0.3s ease;
+      border-bottom: 2px solid var(--light-orange);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+    }
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text-dark);
+      font-weight: 700;
+      font-size: 1.5rem;
+    }
+
+    .navbar-brand i {
+      color: var(--primary-orange);
+      margin-right: 10px;
+      font-size: 2rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: var(--text-dark);
+      font-weight: 500;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .nav-link:hover {
+      color: var(--primary-orange);
+      transform: translateY(-2px);
+    }
+
+    .nav-link.btn {
+      background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+      color: white;
+      padding: 0.7rem 1.5rem;
+      border-radius: 25px;
+      box-shadow: 0 4px 15px var(--shadow);
+    }
+
+    .nav-link.btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px var(--shadow);
+    }
+
+    /* Hero Section */
+    .hero_section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      padding-top: 100px;
+    }
+
+    .floating-elements {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .floating-element {
+      position: absolute;
+      color: var(--light-orange);
+      font-size: 2rem;
+      opacity: 0.3;
+      animation: floatAround 10s linear infinite;
+    }
+
+    .floating-element:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
+    .floating-element:nth-child(2) { top: 60%; right: 15%; animation-delay: -2s; }
+    .floating-element:nth-child(3) { bottom: 30%; left: 20%; animation-delay: -4s; }
+    .floating-element:nth-child(4) { top: 40%; right: 30%; animation-delay: -6s; }
+
+    @keyframes floatAround {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(20px, -20px) rotate(90deg); }
+      50% { transform: translate(-10px, 10px) rotate(180deg); }
+      75% { transform: translate(-20px, -10px) rotate(270deg); }
+    }
+
+    .hero-content {
+      text-align: center;
+      z-index: 2;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+      color: white;
+      padding: 0.5rem 1.5rem;
+      border-radius: 25px;
+      font-weight: 500;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 15px var(--shadow);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .hero-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--primary-orange), var(--dark-orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-title.main {
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-title.school {
+      font-size: clamp(1.5rem, 3vw, 2.5rem);
+      margin-bottom: 2rem;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+      color: white;
+      padding: 1rem 2rem;
+      text-decoration: none;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      box-shadow: 0 6px 20px var(--shadow);
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+    }
+
+    .hero-cta:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px var(--shadow);
+    }
+
+    /* Menu Section */
+    .menu-section {
+      padding: 5rem 0;
+      background: linear-gradient(135deg, var(--white) 0%, var(--cream) 100%);
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 3rem;
+      color: var(--text-dark);
+      position: relative;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 4px;
+      background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+      border-radius: 2px;
+    }
+
+    .menu-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 3rem;
+      flex-wrap: wrap;
+    }
+
+    .menu-tab {
+      background: white;
+      border: 2px solid var(--light-orange);
+      color: var(--text-dark);
+      padding: 0.8rem 2rem;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .menu-tab.active,
+    .menu-tab:hover {
+      background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px var(--shadow);
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .menu-item {
+      background: white;
+      border-radius: 20px;
+      padding: 1.5rem;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .menu-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+      transition: all 0.3s ease;
+    }
+
+    .menu-item:hover::before {
+      left: 0;
+    }
+
+    .menu-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .menu-item-image {
+      width: 100%;
+      height: 200px;
+      border-radius: 15px;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--light-orange), var(--secondary-orange));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      color: white;
+    }
+
+    .menu-item h3 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-dark);
+    }
+
+    .menu-item p {
+      color: #666;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .menu-item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .price {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary-orange);
+    }
+
+    .add-to-cart {
+      background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+      color: white;
+      border: none;
+      padding: 0.7rem 1.5rem;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .add-to-cart:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px var(--shadow);
+    }
+
+    /* About Section */
+    .about-section {
+      padding: 5rem 0;
+      background: var(--cream);
+    }
+
+    .about-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 3rem;
+      align-items: center;
+    }
+
+    .about-text {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: #555;
+    }
+
+    .about-text h3 {
+      color: var(--text-dark);
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+
+    .about-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .feature-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      color: var(--primary-orange);
+      margin-bottom: 1rem;
+    }
+
+    .feature-card h4 {
+      margin-bottom: 0.5rem;
+      color: var(--text-dark);
+    }
+
+    /* Stats Section */
+    .stats-section {
+      padding: 5rem 0;
+      background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+      color: white;
+    }
+
+    .stats-section .section-title {
+      color: white;
+    }
+
+    .stats-section .section-title::after {
+      background: white;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+    }
+
+    .stat-card {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2rem;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--dark-brown);
+      color: white;
+      padding: 3rem 0 1rem;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .footer-section h3 {
+      color: var(--light-orange);
+      margin-bottom: 1rem;
+      font-size: 1.3rem;
+    }
+
+    .footer-section p,
+    .footer-section a {
+      color: #ccc;
+      text-decoration: none;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-section a:hover {
+      color: var(--light-orange);
+    }
+
+    .social-links {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin: 2rem 0;
+    }
+
+    .social-links a {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .social-links a:hover {
+      transform: translateY(-3px) scale(1.1);
+      box-shadow: 0 8px 25px var(--shadow);
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: 2rem;
+      border-top: 1px solid #555;
+      color: #999;
+    }
+
+    /* Cart Notification */
+    .cart-notification {
+      position: fixed;
+      top: 100px;
+      right: -300px;
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      z-index: 1001;
+      transition: all 0.3s ease;
+      border-left: 4px solid var(--primary-orange);
+    }
+
+    .cart-notification.show {
+      right: 20px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links {
+        gap: 1rem;
+      }
+
+      .hero-title.main {
+        font-size: 2rem;
+      }
+
+      .hero-title.school {
+        font-size: 1.5rem;
+      }
+
+      .menu-tabs {
+        gap: 0.5rem;
+      }
+
+      .menu-tab {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* Loading Animation */
+    .loading {
+      opacity: 0;
+      animation: fadeInUp 0.8s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .menu-item:nth-child(1) { animation-delay: 0.1s; }
+    .menu-item:nth-child(2) { animation-delay: 0.2s; }
+    .menu-item:nth-child(3) { animation-delay: 0.3s; }
+    .menu-item:nth-child(4) { animation-delay: 0.4s; }
+    .menu-item:nth-child(5) { animation-delay: 0.5s; }
+    .menu-item:nth-child(6) { animation-delay: 0.6s; }
+  </style>
+</head>
+<body>
+  <div class="animated-bg"></div>
+
+  <!-- Cart Notification -->
+  <div class="cart-notification" id="cartNotification">
+    <p><i class="fas fa-check-circle" style="color: var(--primary-orange);"></i> Item ditambahkan ke keranjang!</p>
+  </div>
+
+  <!-- Header -->
+  <header id="header">
+    <div class="container">
+      <nav class="navbar">
+        <!-- Logo -->
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-coffee"></i>
+          <span>Cafe KAFKA</span>
+        </a>
+
+        <!-- Menu -->
+        <div class="nav-links">
+          <a class="nav-link" href="#makanan">Makanan</a>
+          <a class="nav-link" href="#minuman">Minuman</a>
+          <a class="nav-link" href="#tentang">Tentang</a>
+          <a class="nav-link btn" href="login.php">Login</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero_section" id="hero_section">
+    <div class="floating-elements">
+      <i class="fas fa-coffee floating-element"></i>
+      <i class="fas fa-hamburger floating-element"></i>
+      <i class="fas fa-pizza-slice floating-element"></i>
+      <i class="fas fa-ice-cream floating-element"></i>
+    </div>
+    
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <i class="fas fa-star"></i>
+          Cafe Terbaik di Sibolangit
+        </div>
+        
+        <h1 class="hero-title main">Selamat Datang Di CAFE KAFKA</h1>
+        <h2 class="hero-title school">Nikmati Cita Rasa Terbaik Bersama Kami</h2>
+
+        <a href="#makanan" class="hero-cta">
+          <i class="fas fa-utensils"></i>
+          Lihat Menu Kami
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Menu Section -->
+  <section class="menu-section" id="menu-section">
+    <div class="container">
+      <h2 class="section-title">Menu Spesial Kami</h2>
+      
+      <div class="menu-tabs">
+        <div class="menu-tab active" data-category="semua">Semua Menu</div>
+        <div class="menu-tab" data-category="makanan">Makanan</div>
+        <div class="menu-tab" data-category="minuman">Minuman</div>
+        <div class="menu-tab" data-category="snack">Snack</div>
+      </div>
+
+      <div class="menu-grid">
+        <!-- Makanan -->
+        <div class="menu-item loading" data-category="makanan" id="makanan">
+          <div class="menu-item-image">
+            <i class="fas fa-hamburger"></i>
+          </div>
+          <h3>Nasi Goreng Spesial</h3>
+          <p>Nasi goreng dengan bumbu rahasia, telur, dan sayuran segar. Disajikan dengan kerupuk dan acar.</p>
+          <div class="menu-item-footer">
+            <span class="price">Rp 25.000</span>
+            <button class="add-to-cart" onclick="addToCart('Nasi Goreng Spesial')">
+              <i class="fas fa-shopping-cart"></i>
+              Pesan
+            </button>
+          </div>
+        </div>
+
+        <div class="menu-item loading" data-category="makanan">
+          <div class="menu-item-image">
+            <i class="fas fa-pizza-slice"></i>
+          </div>
+          <h3>Mie Ayam Bakso</h3>
+          <p>Mie ayam dengan bakso kenyal, dilengkapi pangsit goreng dan sayuran. Kuah gurih yang menggugah selera.</p>
+          <div class="menu-item-footer">
+            <span class="price">Rp 20.000</span>
+            <button class="add-to-cart" onclick="addToCart('Mie Ayam Bakso')">
+              <i class="fas fa-shopping-cart"></i>
+              Pesan
+            </button>
+          </div>
+        </div>
+
+        <div class="menu-item loading" data-category="makanan">
+          <div class="menu-item-image">
+            <i class="fas fa-drumstick-bite"></i>
+          </div>
+          <h3>Ayam Bakar Madu</h3>
+          <p>Ayam bakar dengan bumbu madu yang manis dan gurih. Disajikan dengan nasi putih dan lalapan.</p>
+          <div class="menu-item-footer">
+            <span class="price">Rp 30.000</span>
+            <button class="add-to-cart" onclick="addToCart('Ayam Bakar Madu')">
+              <i class="fas fa-shopping-cart"></i>
+              Pesan
+            </button>
+          </div>
+        </div>
+
+        <!-- Minuman -->
+        <div class="menu-item loading" data-category="minuman" id="minuman">
+          <div class="menu-item-image">
+            <i class="fas fa-coffee"></i>
+          </div>
+          <h3>Kopi Susu Gula Aren</h3>
+          <p>Kopi robusta pilihan dengan susu segar dan gula aren asli. Rasa yang sempurna untuk memulai hari.</p>
+          <div class="menu-item-footer">
+            <span class="price">Rp 15.000</span>
+            <button class="add-to-cart" onclick="addToCart('Kopi Susu Gula Aren')">
+              <i class="fas fa-shopping-cart"></i>
+              Pesan
+            </button>
+          </div>
+        </div>
+
+        <div class="menu-item loading" data-category="minuman">
+          <div class="menu-item-image">
+            <i class="fas fa-glass-whiskey"></i>
+          </div>
+          <h3>Es Teh Manis</h3>
+          <p>Teh manis segar dengan es batu yang menyegarkan. Cocok untuk menemani makanan berat.</p>
+          <div class="menu-item-footer">
+            <span class="price">Rp 8.000</span>
+            <button class="add-to-cart" onclick="addToCart('Es Teh Manis')">
+              <i class="fas fa-shopping-cart"></i>
+              Pesan
+            </button>
+          </div>
+        </div>
+
+        <div class="menu-item loading" data-category="minuman">
+          <div class="menu-item-image">
+            <i class="fas fa-cocktail"></i>
+          </div>
+          <h3>Jus Alpukat</h3>
+          <p>Jus alpukat segar dengan susu kental manis. Creamy dan bergizi tinggi, cocok untuk segala usia.</p>
+          <div class="menu-item-footer">
+            <span class="price">Rp 18.000</span>
+            <button class="add-to-cart" onclick="addToCart('Jus Alpukat')">
+              <i class="fas fa-shopping-cart"></i>
+              Pesan
+            </button>
+          </div>
+        </div>
+
+        <!-- Snack -->
+        <div class="menu-item loading" data-category="snack">
+          <div class="menu-item-image">
+            <i class="fas fa-cookie-bite"></i>
+          </div>
+          <h3>Pisang Goreng Crispy</h3>
+          <p>Pisang goreng dengan tepung crispy yang renyah. Disajikan hangat dengan taburan gula halus.</p>
+          <div class="menu-item-footer">
+            <span class="price">Rp 12.000</span>
+            <button class="add-to-cart" onclick="addToCart('Pisang Goreng Crispy')">
+              <i class="fas fa-shopping-cart"></i>
+              Pesan
+            </button>
+          </div>
+        </div>
+
+        <div class="menu-item loading" data-category="snack">
+          <div class="menu-item-image">
+            <i class="fas fa-bread-slice"></i>
+          </div>
+          <h3>Roti Bakar Coklat</h3>
+          <p>Roti tawar bakar dengan olesan coklat dan keju. Gurih, manis, dan mengenyangkan.</p>
+          <div class="menu-item-footer">
+            <span class="price">Rp 15.000</span>
+            <button class="add-to-cart" onclick="addToCart('Roti Bakar Coklat')">
+              <i class="fas fa-shopping-cart"></i>
+              Pesan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="tentang" class="about-section">
+    <div class="container">
+      <h2 class="section-title">Tentang Cafe Kafka</h2>
+      
+      <div class="about-content">
+        <div class="about-text">
+          <h3>Selamat Datang di Cafe Kafka!</h3>
+          <p>
+            Cafe Kafka adalah tempat yang sempurna untuk menikmati makanan dan minuman berkualitas tinggi dalam suasana yang hangat dan nyaman. Terletak di area SMP-SMK Masehi Sibolangit, kami menyajikan berbagai hidangan lezat yang dibuat dengan bahan-bahan segar dan berkualitas.
+          </p>
+          <p>
+            Dengan resep turun-temurun dan sentuhan modern, setiap hidangan di Cafe Kafka dibuat dengan penuh cinta dan perhatian. Kami berkomitmen untuk memberikan pengalaman kuliner terbaik bagi setiap pengunjung.
+          </p>
+        </div>
+      </div>
+
+      <div class="about-features">
+        <div class="feature-card loading">
+          <i class="fas fa-utensils feature-icon"></i>
+          <h4>Menu Berkualitas</h4>
+          <p>Hidangan segar dengan bahan pilihan terbaik</p>
+        </div>
+        <div class="feature-card loading">
+          <i class="fas fa-clock feature-icon"></i>
+          <h4>Pelayanan Cepat</h4>
+          <p>Pesanan siap dalam waktu yang singkat</p>
+        </div>
+        <div class="feature-card loading">
+          <i class="fas fa-heart feature-icon"></i>
+          <h4>Suasana Nyaman</h4>
+          <p>Tempat yang cocok untuk bersantai dan berkumpul</p>
+        </div>
+        <div class="feature-card loading">
+          <i class="fas fa-dollar-sign feature-icon"></i>
+          <h4>Harga Terjangkau</h4>
+          <p>Cita rasa premium dengan harga yang ramah di kantong</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats-section">
+    <div class="container">
+      <h2 class="section-title">Statistik Cafe Kafka</h2>
+
+      <div class="stats-grid">
+        <div class="stat-card loading">
+          <span class="stat-number" id="customers">500+</span>
+          <span class="stat-label">Pelanggan Puas</span>
+        </div>
+        <div class="stat-card loading">
+          <span class="stat-number" id="menu-items">25+</span>
+          <span class="stat-label">Variasi Menu</span>
+        </div>
+        <div class="stat-card loading">
+          <span class="stat-number" id="years">3+</span>
+          <span class="stat-label">Tahun Melayani</span>
+        </div>
+        <div class="stat-card loading">
+          <span class="stat-number" id="rating">4.8</span>
+          <span class="stat-label">Rating Kepuasan</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <!-- Cafe Info -->
+        <div class="footer-section">
+          <h3>Cafe Kafka</h3>
+          <p><i class="fas fa-map-marker-alt"></i>JL. Jamin Ginting KM.39,5, Sibolangit</p>
+          <p><i class="fas fa-location-dot"></i>Deli Serdang, Sumatera Utara</p>
+          <p><i class="fas fa-clock"></i>Senin - Minggu: 07:00 - 22:00</p>
+          <p><i class="fas fa-phone"></i>+62 812 3456 7890</p>
+        </div>
+
+        <!-- Menu Links -->
+        <div class="footer-section">
+          <h3>Menu Favorit</h3>
+          <a href="#makanan"><i class="fas fa-hamburger"></i>Nasi Goreng Spesial</a>
+          <a href="#makanan"><i class="fas fa-drumstick-bite"></i>Ayam Bakar Madu</a>
+          <a href="#minuman"><i class="fas fa-coffee"></i>Kopi Susu Gula Aren</a>
+          <a href="#minuman"><i class="fas fa-cocktail"></i>Jus Alpukat</a>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="footer-section">
+          <h3>Navigasi</h3>
+          <a href="#hero_section"><i class="fas fa-home"></i>Beranda</a>
+          <a href="#makanan"><i class="fas fa-utensils"></i>Makanan</a>
+          <a href="#minuman"><i class="fas fa-coffee"></i>Minuman</a>
+          <a href="#tentang"><i class="fas fa-info-circle"></i>Tentang</a>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="footer-section">
+          <h3>Hubungi Kami</h3>
+          <a href="mailto:info@cafekafka.com"><i class="fas fa-envelope"></i>info@cafekafka.com</a>
+          <a href="https://wa.me/6281234567890"><i class="fab fa-whatsapp"></i>WhatsApp</a>
+          <a href="#"><i class="fab fa-instagram"></i>@cafekafka_official</a>
+          <a href="login.php"><i class="fas fa-sign-in-alt"></i>Login Pelanggan</a>
+        </div>
+      </div>
+
+      <!-- Social Media Links -->
+      <div class="social-links">
+        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="#" title="YouTube"><i class="fab fa-youtube"></i></a>
+        <a href="https://wa.me/6281234567890" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+      </div>
+
+      <!-- Footer Bottom -->
+      <div class="footer-bottom">
+        <p>&copy; 2025 Cafe Kafka. All Rights Reserved.</p>
+        <p>Cita Rasa Terbaik untuk Anda - Developed with <i class="fas fa-heart" style="color: #ff6b35;"></i></p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Menu Tab Functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const menuTabs = document.querySelectorAll('.menu-tab');
+      const menuItems = document.querySelectorAll('.menu-item');
+
+      menuTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // Remove active class from all tabs
+          menuTabs.forEach(t => t.classList.remove('active'));
+          // Add active class to clicked tab
+          this.classList.add('active');
+
+          const category = this.dataset.category;
+
+          // Filter menu items
+          menuItems.forEach(item => {
+            if (category === 'semua' || item.dataset.category === category) {
+              item.style.display = 'block';
+              item.style.animation = 'fadeInUp 0.5s ease forwards';
+            } else {
+              item.style.display = 'none';
+            }
+          });
+        });
+      });
+
+      // Smooth scrolling for navigation links
+      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            target.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        });
+      });
+
+      // Header scroll effect
+      window.addEventListener('scroll', function() {
+        const header = document.getElementById('header');
+        if (window.scrollY > 100) {
+          header.style.background = 'rgba(255, 255, 255, 0.98)';
+          header.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
+        } else {
+          header.style.background = 'rgba(255, 255, 255, 0.95)';
+          header.style.boxShadow = 'none';
+        }
+      });
+
+      // Loading animation trigger
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('loading');
+          }
+        });
+      }, observerOptions);
+
+      // Observe all elements with loading class
+      document.querySelectorAll('.feature-card, .stat-card').forEach(el => {
+        observer.observe(el);
+      });
+    });
+
+    // Add to Cart Function
+    function addToCart(itemName) {
+      // Show notification
+      const notification = document.getElementById('cartNotification');
+      notification.querySelector('p').innerHTML = `<i class="fas fa-check-circle" style="color: var(--primary-orange);"></i> ${itemName} ditambahkan ke keranjang!`;
+      notification.classList.add('show');
+
+      // Hide notification after 3 seconds
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+
+      // Redirect to login page after short delay
+      setTimeout(() => {
+        window.location.href = 'login.php';
+      }, 1000);
+    }
+
+    // Counter animation for stats
+    function animateCounter(element, target, duration = 2000) {
+      let start = 0;
+      const increment = target / (duration / 16);
+      
+      const timer = setInterval(() => {
+        start += increment;
+        if (start >= target) {
+          element.textContent = target.toString().includes('.') ? target : target + '+';
+          clearInterval(timer);
+        } else {
+          element.textContent = Math.floor(start).toString() + '+';
+        }
+      }, 16);
+    }
+
+    // Trigger counter animation when stats section is visible
+    const statsObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const customers = document.getElementById('customers');
+          const menuItems = document.getElementById('menu-items');
+          const years = document.getElementById('years');
+          const rating = document.getElementById('rating');
+
+          animateCounter(customers, 500);
+          animateCounter(menuItems, 25);
+          animateCounter(years, 3);
+          
+          // Special animation for rating
+          let start = 0;
+          const timer = setInterval(() => {
+            start += 0.1;
+            if (start >= 4.8) {
+              rating.textContent = '4.8';
+              clearInterval(timer);
+            } else {
+              rating.textContent = start.toFixed(1);
+            }
+          }, 50);
+
+          statsObserver.unobserve(entry.target);
+        }
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const statsSection = document.querySelector('.stats-section');
+      if (statsSection) {
+        statsObserver.observe(statsSection);
+      }
+    });
+  </script>
+</body>
+</html>
