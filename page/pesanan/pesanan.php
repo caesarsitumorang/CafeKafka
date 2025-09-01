@@ -2,24 +2,48 @@
 if (session_status() == PHP_SESSION_NONE) session_start();
 include "config/koneksi.php";
 
-// Cek login
+// Cek login user
 $id_user = $_SESSION['id_user'] ?? null;
 if (!$id_user) {
     echo "<script>alert('Silakan login terlebih dahulu.'); window.location='login.php';</script>";
     exit;
 }
 
+// Ambil username dari tabel users
+$user_query = mysqli_query($koneksi, "SELECT username FROM users WHERE id_user = '$id_user'");
+$user_data  = mysqli_fetch_assoc($user_query);
+
+if (!$user_data) {
+    echo "<script>alert('Data user tidak ditemukan.'); window.location='login.php';</script>";
+    exit;
+}
+
+$username = $user_data['username'];
+
+// Cari data pelanggan berdasarkan username
+$pelanggan_query = mysqli_query($koneksi, "SELECT * FROM pelanggan WHERE username = '$username'");
+$pelanggan = mysqli_fetch_assoc($pelanggan_query);
+
+if (!$pelanggan) {
+    echo "<script>alert('Data pelanggan tidak ditemukan.'); window.location='login.php';</script>";
+    exit;
+}
+
+$id_pelanggan = $pelanggan['id_pelanggan'];
+
+// Ambil data pesanan berdasarkan id_pelanggan
 $query = "
     SELECT p.*, m.nama AS nama_makanan, n.nama AS nama_minuman, 
            p.created_at, p.updated_at
     FROM pesanan p
     LEFT JOIN makanan m ON p.id_makanan = m.id
     LEFT JOIN minuman n ON p.id_minuman = n.id
-    WHERE p.id_pelanggan = $id_user
+    WHERE p.id_pelanggan = $id_pelanggan
     ORDER BY p.id DESC
 ";
 $result = mysqli_query($koneksi, $query);
 
+// Ambil statistik pesanan
 $stats_query = "
     SELECT 
         COUNT(*) as total,
@@ -29,11 +53,12 @@ $stats_query = "
         SUM(CASE WHEN status = 'ditolak' THEN 1 ELSE 0 END) as ditolak,
         SUM(CASE WHEN status = 'selesai' THEN 1 ELSE 0 END) as selesai
     FROM pesanan 
-    WHERE id_pelanggan = $id_user
+    WHERE id_pelanggan = $id_pelanggan
 ";
 $stats_result = mysqli_query($koneksi, $stats_query);
 $stats = mysqli_fetch_assoc($stats_result);
 ?>
+
 
 <!DOCTYPE html>
 <html lang="id">

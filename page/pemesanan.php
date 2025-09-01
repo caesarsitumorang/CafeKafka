@@ -9,6 +9,28 @@ if (!$id_user) {
     exit;
 }
 
+// Ambil data user
+$user_query = mysqli_query($koneksi, "SELECT username FROM users WHERE id_user = '$id_user'");
+$user_data  = mysqli_fetch_assoc($user_query);
+
+if (!$user_data) {
+    echo "<script>alert('Data user tidak ditemukan.'); window.location='login.php';</script>";
+    exit;
+}
+
+$username = $user_data['username'];
+
+// Cari pelanggan berdasarkan username
+$pelanggan_query = mysqli_query($koneksi, "SELECT * FROM pelanggan WHERE username = '$username'");
+$pelanggan = mysqli_fetch_assoc($pelanggan_query);
+
+if (!$pelanggan) {
+    echo "<script>alert('Data pelanggan tidak ditemukan.'); window.location='login.php';</script>";
+    exit;
+}
+
+$id_pelanggan = $pelanggan['id_pelanggan'];
+
 // Ambil parameter URL
 $tipe = $_GET['tipe'] ?? null;
 $id   = $_GET['id'] ?? null;
@@ -45,13 +67,24 @@ if (isset($_POST['pesan'])) {
     $id_makanan = ($tipe == "makanan") ? $item['id'] : null;
     $id_minuman = ($tipe == "minuman") ? $item['id'] : null;
 
+    // Insert ke tabel pesanan
     $stmt = $koneksi->prepare("INSERT INTO pesanan (id_pelanggan, id_makanan, id_minuman, total_harga, status, bukti_pembayaran) VALUES (?, ?, ?, ?, 'pending', ?)");
-    $stmt->bind_param("iiiis", $id_user, $id_makanan, $id_minuman, $total_harga, $bukti);
+    $stmt->bind_param("iiiis", $id_pelanggan, $id_makanan, $id_minuman, $total_harga, $bukti);
     $stmt->execute();
+
+    // Ambil id_pesanan terakhir
+    $id_pesanan = $koneksi->insert_id;
+
+    // Insert ke pesanan_detail
+    $stmt_detail = $koneksi->prepare("INSERT INTO pesanan_detail (id_pesanan, id_makanan, id_minuman, jumlah) VALUES (?, ?, ?, ?)");
+    $stmt_detail->bind_param("iiii", $id_pesanan, $id_makanan, $id_minuman, $jumlah);
+    $stmt_detail->execute();
 
     $success_message = "Pesanan berhasil dibuat!";
 }
 ?>
+
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -416,6 +449,7 @@ body {
 </style>
 </head>
 <body>
+
 <div class="container-fluid">
     <div class="main-card">
         <!-- Bagian Gambar -->
@@ -466,19 +500,30 @@ body {
             <div class="form-section">
                 <form method="post" enctype="multipart/form-data">
                     <div class="form-group">
-                        <label for="jumlah" class="form-label">
-                            <i class="fas fa-calculator"></i>
-                            Jumlah Pesanan
-                        </label>
-                        <input type="number" 
-                               name="jumlah" 
-                               id="jumlah" 
-                               class="form-control" 
-                               min="1" 
-                               max="<?= $item['stok'] ?>" 
-                               value="1" 
-                               required>
-                    </div>
+    <label for="jumlah" class="form-label">
+        <i class="fas fa-calculator"></i>
+        Jumlah Pesanan
+    </label>
+    <input type="number" 
+           name="jumlah" 
+           id="jumlah" 
+           class="form-control" 
+           min="1" 
+           max="<?= $item['stok'] ?>" 
+           value="1" 
+           required>
+</div>
+
+<div class="form-group">
+    <label class="form-label">
+        <i class="fas fa-money-bill"></i>
+        Total Harga
+    </label>
+    <div id="total-harga" class="total-display" style="font-weight:bold; color:green;">
+        Rp <?= number_format($item['harga'], 0, ',', '.') ?>
+    </div>
+</div>
+
                     
                     <div class="form-group">
                         <label for="bukti" class="form-label">
@@ -551,10 +596,11 @@ document.getElementById('jumlah').addEventListener('input', function() {
     const quantity = parseInt(this.value) || 0;
     const price = <?= $item['harga'] ?>;
     const total = quantity * price;
-    
-    // You can add a total display here if needed
-    console.log('Total: Rp ' + total.toLocaleString('id-ID'));
+
+    document.getElementById('total-harga').innerText = 
+        "Rp " + total.toLocaleString('id-ID');
 });
+
 </script>
 
 </body>
