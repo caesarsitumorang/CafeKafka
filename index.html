@@ -354,6 +354,22 @@
       justify-content: center;
       font-size: 3rem;
       color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .menu-item-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 15px;
+    }
+
+    .menu-item-image i {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
 
     .menu-item h3 {
@@ -398,6 +414,53 @@
     .add-to-cart:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 15px var(--shadow);
+    }
+
+    .add-to-cart:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Stock badge */
+    .stock-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--primary-orange);
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .stock-badge.low-stock {
+      background: #ff6b6b;
+    }
+
+    .stock-badge.out-of-stock {
+      background: #666;
+    }
+
+    /* Loading and Error States */
+    .loading-spinner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      font-size: 2rem;
+      color: var(--primary-orange);
+    }
+
+    .error-message {
+      text-align: center;
+      padding: 2rem;
+      color: #ff6b6b;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
 
     /* About Section */
@@ -455,54 +518,6 @@
     .feature-card h4 {
       margin-bottom: 0.5rem;
       color: var(--text-dark);
-    }
-
-    /* Stats Section */
-    .stats-section {
-      padding: 5rem 0;
-      background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
-      color: white;
-    }
-
-    .stats-section .section-title {
-      color: white;
-    }
-
-    .stats-section .section-title::after {
-      background: white;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 2rem;
-    }
-
-    .stat-card {
-      text-align: center;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 2rem;
-      border-radius: 20px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.3s ease;
-    }
-
-    .stat-card:hover {
-      transform: translateY(-5px);
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    .stat-number {
-      font-size: 3rem;
-      font-weight: 700;
-      display: block;
-      margin-bottom: 0.5rem;
-    }
-
-    .stat-label {
-      font-size: 1.1rem;
-      opacity: 0.9;
     }
 
     /* Footer */
@@ -678,15 +693,10 @@
     
     <div class="container">
       <div class="hero-content">
-        <div class="hero-badge">
-          <i class="fas fa-star"></i>
-          Cafe Terbaik di Sibolangit
-        </div>
-        
         <h1 class="hero-title main">Selamat Datang Di CAFE KAFKA</h1>
         <h2 class="hero-title school">Nikmati Cita Rasa Terbaik Bersama Kami</h2>
 
-        <a href="#makanan" class="hero-cta">
+        <a href="#menu-section" class="hero-cta">
           <i class="fas fa-utensils"></i>
           Lihat Menu Kami
         </a>
@@ -706,128 +716,10 @@
         <div class="menu-tab" data-category="snack">Snack</div>
       </div>
 
-      <div class="menu-grid">
-        <!-- Makanan -->
-        <div class="menu-item loading" data-category="makanan" id="makanan">
-          <div class="menu-item-image">
-            <i class="fas fa-hamburger"></i>
-          </div>
-          <h3>Nasi Goreng Spesial</h3>
-          <p>Nasi goreng dengan bumbu rahasia, telur, dan sayuran segar. Disajikan dengan kerupuk dan acar.</p>
-          <div class="menu-item-footer">
-            <span class="price">Rp 25.000</span>
-            <button class="add-to-cart" onclick="addToCart('Nasi Goreng Spesial')">
-              <i class="fas fa-shopping-cart"></i>
-              Pesan
-            </button>
-          </div>
-        </div>
-
-        <div class="menu-item loading" data-category="makanan">
-          <div class="menu-item-image">
-            <i class="fas fa-pizza-slice"></i>
-          </div>
-          <h3>Mie Ayam Bakso</h3>
-          <p>Mie ayam dengan bakso kenyal, dilengkapi pangsit goreng dan sayuran. Kuah gurih yang menggugah selera.</p>
-          <div class="menu-item-footer">
-            <span class="price">Rp 20.000</span>
-            <button class="add-to-cart" onclick="addToCart('Mie Ayam Bakso')">
-              <i class="fas fa-shopping-cart"></i>
-              Pesan
-            </button>
-          </div>
-        </div>
-
-        <div class="menu-item loading" data-category="makanan">
-          <div class="menu-item-image">
-            <i class="fas fa-drumstick-bite"></i>
-          </div>
-          <h3>Ayam Bakar Madu</h3>
-          <p>Ayam bakar dengan bumbu madu yang manis dan gurih. Disajikan dengan nasi putih dan lalapan.</p>
-          <div class="menu-item-footer">
-            <span class="price">Rp 30.000</span>
-            <button class="add-to-cart" onclick="addToCart('Ayam Bakar Madu')">
-              <i class="fas fa-shopping-cart"></i>
-              Pesan
-            </button>
-          </div>
-        </div>
-
-        <!-- Minuman -->
-        <div class="menu-item loading" data-category="minuman" id="minuman">
-          <div class="menu-item-image">
-            <i class="fas fa-coffee"></i>
-          </div>
-          <h3>Kopi Susu Gula Aren</h3>
-          <p>Kopi robusta pilihan dengan susu segar dan gula aren asli. Rasa yang sempurna untuk memulai hari.</p>
-          <div class="menu-item-footer">
-            <span class="price">Rp 15.000</span>
-            <button class="add-to-cart" onclick="addToCart('Kopi Susu Gula Aren')">
-              <i class="fas fa-shopping-cart"></i>
-              Pesan
-            </button>
-          </div>
-        </div>
-
-        <div class="menu-item loading" data-category="minuman">
-          <div class="menu-item-image">
-            <i class="fas fa-glass-whiskey"></i>
-          </div>
-          <h3>Es Teh Manis</h3>
-          <p>Teh manis segar dengan es batu yang menyegarkan. Cocok untuk menemani makanan berat.</p>
-          <div class="menu-item-footer">
-            <span class="price">Rp 8.000</span>
-            <button class="add-to-cart" onclick="addToCart('Es Teh Manis')">
-              <i class="fas fa-shopping-cart"></i>
-              Pesan
-            </button>
-          </div>
-        </div>
-
-        <div class="menu-item loading" data-category="minuman">
-          <div class="menu-item-image">
-            <i class="fas fa-cocktail"></i>
-          </div>
-          <h3>Jus Alpukat</h3>
-          <p>Jus alpukat segar dengan susu kental manis. Creamy dan bergizi tinggi, cocok untuk segala usia.</p>
-          <div class="menu-item-footer">
-            <span class="price">Rp 18.000</span>
-            <button class="add-to-cart" onclick="addToCart('Jus Alpukat')">
-              <i class="fas fa-shopping-cart"></i>
-              Pesan
-            </button>
-          </div>
-        </div>
-
-        <!-- Snack -->
-        <div class="menu-item loading" data-category="snack">
-          <div class="menu-item-image">
-            <i class="fas fa-cookie-bite"></i>
-          </div>
-          <h3>Pisang Goreng Crispy</h3>
-          <p>Pisang goreng dengan tepung crispy yang renyah. Disajikan hangat dengan taburan gula halus.</p>
-          <div class="menu-item-footer">
-            <span class="price">Rp 12.000</span>
-            <button class="add-to-cart" onclick="addToCart('Pisang Goreng Crispy')">
-              <i class="fas fa-shopping-cart"></i>
-              Pesan
-            </button>
-          </div>
-        </div>
-
-        <div class="menu-item loading" data-category="snack">
-          <div class="menu-item-image">
-            <i class="fas fa-bread-slice"></i>
-          </div>
-          <h3>Roti Bakar Coklat</h3>
-          <p>Roti tawar bakar dengan olesan coklat dan keju. Gurih, manis, dan mengenyangkan.</p>
-          <div class="menu-item-footer">
-            <span class="price">Rp 15.000</span>
-            <button class="add-to-cart" onclick="addToCart('Roti Bakar Coklat')">
-              <i class="fas fa-shopping-cart"></i>
-              Pesan
-            </button>
-          </div>
+      <div class="menu-grid" id="menuGrid">
+        <!-- Loading spinner will be shown here initially -->
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
         </div>
       </div>
     </div>
@@ -870,32 +762,6 @@
           <i class="fas fa-dollar-sign feature-icon"></i>
           <h4>Harga Terjangkau</h4>
           <p>Cita rasa premium dengan harga yang ramah di kantong</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Stats Section -->
-  <section class="stats-section">
-    <div class="container">
-      <h2 class="section-title">Statistik Cafe Kafka</h2>
-
-      <div class="stats-grid">
-        <div class="stat-card loading">
-          <span class="stat-number" id="customers">500+</span>
-          <span class="stat-label">Pelanggan Puas</span>
-        </div>
-        <div class="stat-card loading">
-          <span class="stat-number" id="menu-items">25+</span>
-          <span class="stat-label">Variasi Menu</span>
-        </div>
-        <div class="stat-card loading">
-          <span class="stat-number" id="years">3+</span>
-          <span class="stat-label">Tahun Melayani</span>
-        </div>
-        <div class="stat-card loading">
-          <span class="stat-number" id="rating">4.8</span>
-          <span class="stat-label">Rating Kepuasan</span>
         </div>
       </div>
     </div>
@@ -959,10 +825,131 @@
   </footer>
 
   <script>
-    // Menu Tab Functionality
-    document.addEventListener('DOMContentLoaded', function() {
+    // Global variables
+    let menuItems = [];
+    let currentCategory = 'semua';
+
+    // Icon mapping for categories
+    const categoryIcons = {
+      'makanan': ['fas fa-hamburger', 'fas fa-pizza-slice', 'fas fa-drumstick-bite', 'fas fa-utensils'],
+      'minuman': ['fas fa-coffee', 'fas fa-glass-whiskey', 'fas fa-cocktail', 'fas fa-mug-hot'],
+      'snack': ['fas fa-cookie-bite', 'fas fa-bread-slice', 'fas fa-ice-cream', 'fas fa-candy-cane']
+    };
+
+    // Get random icon for category
+    function getRandomIcon(category) {
+      const icons = categoryIcons[category] || categoryIcons['makanan'];
+      return icons[Math.floor(Math.random() * icons.length)];
+    }
+
+    // Format rupiah currency
+    function formatRupiah(amount) {
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0
+      }).format(amount);
+    }
+
+    // Load menu items from database
+    async function loadMenuItems() {
+      const menuGrid = document.getElementById('menuGrid');
+      
+      try {
+        const response = await fetch('api_stats.php');
+        const data = await response.json();
+        
+        if (data.success) {
+          menuItems = data.data;
+          renderMenuItems();
+        } else {
+          showError('Gagal memuat data menu: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error loading menu:', error);
+        showError('Gagal terhubung ke server. Silakan coba lagi nanti.');
+      }
+    }
+
+    // Show error message
+    function showError(message) {
+      const menuGrid = document.getElementById('menuGrid');
+      menuGrid.innerHTML = `
+        <div class="error-message" style="grid-column: 1 / -1;">
+          <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+          <h3>Oops! Terjadi Kesalahan</h3>
+          <p>${message}</p>
+          <button onclick="loadMenuItems()" class="add-to-cart" style="margin-top: 1rem;">
+            <i class="fas fa-refresh"></i> Coba Lagi
+          </button>
+        </div>
+      `;
+    }
+
+    // Render menu items
+    function renderMenuItems() {
+      const menuGrid = document.getElementById('menuGrid');
+      
+      if (menuItems.length === 0) {
+        menuGrid.innerHTML = `
+          <div class="error-message" style="grid-column: 1 / -1;">
+            <i class="fas fa-utensils" style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-orange);"></i>
+            <h3>Menu Sedang Dipersiapkan</h3>
+            <p>Maaf, menu belum tersedia saat ini. Silakan cek kembali nanti.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Filter items based on current category
+      const filteredItems = currentCategory === 'semua' 
+        ? menuItems 
+        : menuItems.filter(item => item.kategori === currentCategory);
+
+      if (filteredItems.length === 0) {
+        menuGrid.innerHTML = `
+          <div class="error-message" style="grid-column: 1 / -1;">
+            <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-orange);"></i>
+            <h3>Tidak Ada Menu</h3>
+            <p>Tidak ada menu yang tersedia untuk kategori "${currentCategory}".</p>
+          </div>
+        `;
+        return;
+      }
+
+      menuGrid.innerHTML = filteredItems.map((item, index) => {
+  const icon = getRandomIcon(item.kategori);
+
+  return `
+    <div class="menu-item loading" data-category="${item.kategori}" style="animation-delay: ${(index * 0.1)}s;">
+      <div class="menu-item-image">
+        ${item.gambar ? 
+          `<img src="upload/${item.gambar}" alt="${item.nama}" 
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <i class="${icon}" style="display: none;"></i>` :
+          `<i class="${icon}"></i>`
+        }
+      </div>
+      <h3>${item.nama}</h3>
+      <p>${item.deskripsi}</p>
+      <div class="menu-item-footer">
+        <span class="price">${item.harga_formatted}</span>
+        <button class="add-to-cart" 
+                onclick="addToCart('${item.nama}', ${item.id}, '${item.table_source}')" 
+                ${item.stok === 0 ? 'disabled' : ''}>
+          <i class="fas fa-shopping-cart"></i>
+          ${item.stok === 0 ? 'Habis' : 'Pesan'}
+        </button>
+      </div>
+    </div>
+  `;
+}).join('');
+
+    }
+
+    // Menu tab functionality
+    function initializeMenuTabs() {
       const menuTabs = document.querySelectorAll('.menu-tab');
-      const menuItems = document.querySelectorAll('.menu-item');
 
       menuTabs.forEach(tab => {
         tab.addEventListener('click', function() {
@@ -971,19 +958,55 @@
           // Add active class to clicked tab
           this.classList.add('active');
 
-          const category = this.dataset.category;
-
-          // Filter menu items
-          menuItems.forEach(item => {
-            if (category === 'semua' || item.dataset.category === category) {
-              item.style.display = 'block';
-              item.style.animation = 'fadeInUp 0.5s ease forwards';
-            } else {
-              item.style.display = 'none';
-            }
-          });
+          currentCategory = this.dataset.category;
+          renderMenuItems();
         });
       });
+    }
+
+    // Add to cart function
+    function addToCart(itemName, itemId, tableSource) {
+      // Show notification
+      const notification = document.getElementById('cartNotification');
+      notification.querySelector('p').innerHTML = `
+        <i class="fas fa-check-circle" style="color: var(--primary-orange);"></i> 
+        ${itemName} ditambahkan ke keranjang!
+      `;
+      notification.classList.add('show');
+
+      // Hide notification after 3 seconds
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+
+      // Store cart data in localStorage (if needed for future use)
+      try {
+        const cartData = {
+          id: itemId,
+          name: itemName,
+          table: tableSource,
+          timestamp: new Date().toISOString()
+        };
+        
+        // You can store this data if needed
+        console.log('Item added to cart:', cartData);
+      } catch (error) {
+        console.log('Cart data logging failed:', error);
+      }
+
+      // Redirect to login page after short delay
+      setTimeout(() => {
+        window.location.href = 'login.php';
+      }, 1000);
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load menu items from database
+      loadMenuItems();
+      
+      // Initialize menu tabs
+      initializeMenuTabs();
 
       // Smooth scrolling for navigation links
       document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -1026,79 +1049,25 @@
       }, observerOptions);
 
       // Observe all elements with loading class
-      document.querySelectorAll('.feature-card, .stat-card').forEach(el => {
+      document.querySelectorAll('.feature-card').forEach(el => {
         observer.observe(el);
       });
     });
 
-    // Add to Cart Function
-    function addToCart(itemName) {
-      // Show notification
-      const notification = document.getElementById('cartNotification');
-      notification.querySelector('p').innerHTML = `<i class="fas fa-check-circle" style="color: var(--primary-orange);"></i> ${itemName} ditambahkan ke keranjang!`;
-      notification.classList.add('show');
+    // Refresh menu data periodically (every 5 minutes)
+    setInterval(loadMenuItems, 300000);
 
-      // Hide notification after 3 seconds
-      setTimeout(() => {
-        notification.classList.remove('show');
-      }, 3000);
-
-      // Redirect to login page after short delay
-      setTimeout(() => {
-        window.location.href = 'login.php';
-      }, 1000);
-    }
-
-    // Counter animation for stats
-    function animateCounter(element, target, duration = 2000) {
-      let start = 0;
-      const increment = target / (duration / 16);
-      
-      const timer = setInterval(() => {
-        start += increment;
-        if (start >= target) {
-          element.textContent = target.toString().includes('.') ? target : target + '+';
-          clearInterval(timer);
-        } else {
-          element.textContent = Math.floor(start).toString() + '+';
-        }
-      }, 16);
-    }
-
-    // Trigger counter animation when stats section is visible
-    const statsObserver = new IntersectionObserver(function(entries) {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const customers = document.getElementById('customers');
-          const menuItems = document.getElementById('menu-items');
-          const years = document.getElementById('years');
-          const rating = document.getElementById('rating');
-
-          animateCounter(customers, 500);
-          animateCounter(menuItems, 25);
-          animateCounter(years, 3);
-          
-          // Special animation for rating
-          let start = 0;
-          const timer = setInterval(() => {
-            start += 0.1;
-            if (start >= 4.8) {
-              rating.textContent = '4.8';
-              clearInterval(timer);
-            } else {
-              rating.textContent = start.toFixed(1);
-            }
-          }, 50);
-
-          statsObserver.unobserve(entry.target);
-        }
-      });
+    // Handle online/offline status
+    window.addEventListener('online', function() {
+      console.log('Connection restored, reloading menu...');
+      loadMenuItems();
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
-      const statsSection = document.querySelector('.stats-section');
-      if (statsSection) {
-        statsObserver.observe(statsSection);
+    window.addEventListener('offline', function() {
+      console.log('Connection lost');
+      const menuGrid = document.getElementById('menuGrid');
+      if (menuGrid.innerHTML.includes('loading-spinner') || menuGrid.innerHTML.includes('error-message')) {
+        showError('Tidak ada koneksi internet. Periksa koneksi Anda dan coba lagi.');
       }
     });
   </script>

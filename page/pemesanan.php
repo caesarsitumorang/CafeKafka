@@ -452,12 +452,18 @@ body {
 
 <div class="container-fluid">
     <div class="main-card">
-        <!-- Bagian Gambar -->
-        <div class="image-section">
-            <img src="<?= $item['gambar'] ? $item['gambar'] : 'assets/default.jpg' ?>" 
-                 alt="<?= $item['nama'] ?>" 
-                 class="product-image">
-        </div>
+       <div class="image-section">
+    <?php 
+        $gambar = $item['gambar'] ?? ''; 
+        $gambar = str_replace("upload/", "", $gambar);
+
+        $path = $gambar ? "../upload/" . $gambar : "assets/default.jpg";
+    ?>
+    <img src="<?= $path ?>" 
+         alt="<?= htmlspecialchars($item['nama']) ?>" 
+         class="product-image">
+</div>
+
 
         <!-- Bagian Konten -->
         <div class="content-section">

@@ -487,8 +487,8 @@ function getDetailPesanan($koneksi, $id_pesanan) {
 </head>
 <body>
 
-<div class="container" style="padding-top: 2rem;">
-    <div class="history-container">
+<div class="container-fluid" style="padding: 0; margin: 0;">
+    <div class="history-container" style="margin: 0; border-radius: 0;">
         <div class="history-header">
             <h4><i class="fas fa-check-circle me-2"></i>Pesanan Selesai (<?= $resPesanan->num_rows ?>)</h4>
         </div>
@@ -691,7 +691,7 @@ function showDetailModal(idPesanan) {
         
         detailHtml += `
             <div class="detail-item">
-                <img src="admin/${image || 'assets/img/no-image.png'}" alt="${name}" class="item-image">
+                <img src="upload/${image || 'assets/img/no-image.png'}" alt="${name}" class="item-image">
                 <div class="item-details">
                     <div class="item-name">${name}</div>
                     <div class="item-price">Rp ${price.toLocaleString('id-ID')}</div>
@@ -699,7 +699,7 @@ function showDetailModal(idPesanan) {
                 </div>
                 <div class="item-quantity">
                     <div class="quantity-badge">${item.jumlah}</div>
-                    <div class="quantity-label">Qty</div>
+                    <div class="quantity-label">Jumlah</div>
                 </div>
                 <div class="item-subtotal">
                     <div class="subtotal-amount">Rp ${subtotal.toLocaleString('id-ID')}</div>
