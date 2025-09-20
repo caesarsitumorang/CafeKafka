@@ -2,17 +2,17 @@
 require_once __DIR__ . '../../../vendor/autoload.php'; 
 include "../../config/koneksi.php";
 
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() == PHP_SESSION_NONE) session_start();
 
 $mpdf = new \Mpdf\Mpdf([
-    'margin_top' => 50, 
-    'margin_bottom' => 30,
+    'margin_top' => 55, 
+    'margin_bottom' => 25,
     'margin_left' => 15,
     'margin_right' => 15,
     'format' => 'A4'
 ]);
+
+$tanggal = $_GET['tanggal'] ?? date('Y-m-d');
 
 // Admin login
 $id_admin = $_SESSION['id_user'] ?? null;
@@ -22,19 +22,22 @@ if ($id_admin) {
     if ($admin) $nama_admin = $admin['username'];
 }
 
+// Query pakai filter tanggal
+$filter = "DATE(p.created_at) = '$tanggal'";
+
 // Data dashboard
 $makanan = mysqli_fetch_assoc(mysqli_query($koneksi, "
     SELECT SUM(pd.jumlah) as total 
     FROM pesanan_detail pd
     INNER JOIN pesanan p ON p.id = pd.id_pesanan
-    WHERE pd.id_makanan IS NOT NULL AND p.status='selesai'
+    WHERE pd.id_makanan IS NOT NULL AND p.status='selesai' AND $filter
 "))['total'] ?? 0;
 
 $minuman = mysqli_fetch_assoc(mysqli_query($koneksi, "
     SELECT SUM(pd.jumlah) as total 
     FROM pesanan_detail pd
     INNER JOIN pesanan p ON p.id = pd.id_pesanan
-    WHERE pd.id_minuman IS NOT NULL AND p.status='selesai'
+    WHERE pd.id_minuman IS NOT NULL AND p.status='selesai' AND $filter
 "))['total'] ?? 0;
 
 $status = mysqli_fetch_assoc(mysqli_query($koneksi, "
@@ -45,31 +48,34 @@ $status = mysqli_fetch_assoc(mysqli_query($koneksi, "
         SUM(CASE WHEN status='diterima' THEN 1 ELSE 0 END) as diterima,
         SUM(CASE WHEN status='ditolak' THEN 1 ELSE 0 END) as ditolak,
         SUM(CASE WHEN status='selesai' THEN 1 ELSE 0 END) as selesai
-    FROM pesanan
+    FROM pesanan p
+    WHERE $filter
 "));
 
 $pelanggan = mysqli_fetch_assoc(mysqli_query($koneksi, "
     SELECT COUNT(DISTINCT id_pelanggan) as total 
-    FROM pesanan
+    FROM pesanan p
+    WHERE $filter
 "))['total'] ?? 0;
 
 $keuangan = mysqli_fetch_assoc(mysqli_query($koneksi, "
     SELECT SUM(total_harga) as total 
-    FROM pesanan WHERE status='selesai'
+    FROM pesanan p 
+    WHERE status='selesai' AND $filter
 "))['total'] ?? 0;
 
-// Header dengan logo + identitas
+// Header dengan logo
 $header = '
-<div style="display:flex; align-items:center; border-bottom:3px solid #c66300; padding-bottom:10px; margin-bottom:15px;">
+<div style="display:flex; align-items:center; border-bottom:3px solid #c66300; padding-bottom:8px; margin-bottom:10px;">
   <div style="flex:0 0 80px; text-align:center;">
     <img src="http://localhost/cafe-kafka-website/img/kafka.png" width="70" height="70" style="object-fit:contain;" />
   </div>
   <div style="flex:1; text-align:center; font-family:Arial, sans-serif;">
-    <h2 style="margin:0; color:#c66300;">CAFE KAFKA</h2>
-    <p style="margin:2px 0; font-size:13px; color:#444;">Jl. Contoh No.123, Medan | Telp: 0812-3456-7890</p>
-    <h3 style="margin:5px 0; color:#333;">LAPORAN DASHBOARD</h3>
+    <h2 style="margin:0; color:#c66300; font-size:20px;">CAFE KAFKA</h2>
+    <p style="margin:2px 0; font-size:12px; color:#444;">Jl. DR. Mansyur III No.1A, Padang Bulan Selayang I, Medan | Telp: 0813-4757-7205</p>
+    <h3 style="margin:5px 0; color:#333; font-size:15px;">LAPORAN DASHBOARD</h3>
     <p style="margin:3px 0; font-size:11px; color:#777;">
-      Dicetak pada '.date('d F Y, H:i').' WIB oleh '.$nama_admin.'
+      Dicetak pada '.date('d F Y, H:i').' WIB oleh <b>'.$nama_admin.'</b>
     </p>
   </div>
 </div>';
@@ -86,35 +92,15 @@ $mpdf->SetHTMLFooter($footer);
 $html = '
 <style>
 body { font-family: Arial, sans-serif; font-size:12px; }
-h3 { color:#c66300; margin-top:25px; }
-.table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-top: 10px;
-  font-size: 12px;
-}
-.table th, .table td {
-  border:1px solid #999;
-  padding:8px;
-  text-align:center;
-}
-.table th {
-  background:#c66300;
-  color:white;
-}
-  hr {
-  display: none;
-}
-
-.ringkasan-data {
-  border: none;
-}
-
+h3 { color:#c66300; margin-top:25px; font-size:14px;  padding-left:6px; }
+.table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 12px; }
+.table th, .table td { border:1px solid #999; padding:8px; text-align:center; vertical-align:middle; }
+.table th { background:#c66300; color:white; font-size:12px; }
 .table tr:nth-child(even) { background:#f9f9f9; }
+.summary { background:#f2f2f2; font-weight:bold; }
 </style>
-<hr>
-<h3 class="ringkasan-title">Ringkasan Data</h3>
 
+<h3>Ringkasan Data (Tanggal: '.date('d-m-Y', strtotime($tanggal)).')</h3>
 <table class="table">
   <tr>
     <th>Makanan Terjual</th>
@@ -122,7 +108,7 @@ h3 { color:#c66300; margin-top:25px; }
     <th>Jumlah Pelanggan</th>
     <th>Total Keuangan</th>
   </tr>
-  <tr>
+  <tr class="summary">
     <td>'.$makanan.'</td>
     <td>'.$minuman.'</td>
     <td>'.$pelanggan.'</td>
@@ -140,7 +126,7 @@ h3 { color:#c66300; margin-top:25px; }
     <th>Ditolak</th>
     <th>Selesai</th>
   </tr>
-  <tr>
+  <tr class="summary">
     <td>'.$status['total'].'</td>
     <td>'.$status['pending'].'</td>
     <td>'.$status['diproses'].'</td>
@@ -150,12 +136,13 @@ h3 { color:#c66300; margin-top:25px; }
   </tr>
 </table>
 
-<div style="margin-top:50px; text-align:right; font-size:12px;">
+<div style="margin-top:60px; text-align:right; font-size:12px;">
   <p>Medan, '.date('d F Y').'</p>
-  <p style="margin-top:60px; font-weight:bold;">'.$nama_admin.'</p>
+  <p style="margin-top:70px; font-weight:bold; text-decoration:underline;">'.$nama_admin.'</p>
+  <p style="margin-top:3px;">Admin Cafe Kafka</p>
 </div>
 ';
 
 $mpdf->WriteHTML($html);
-$mpdf->Output("Laporan_Dashboard_CafeKafka_" . date('Y-m-d') . ".pdf", "I");
+$mpdf->Output("Laporan_Dashboard_CafeKafka_" . $tanggal . ".pdf", "I");
 ?>

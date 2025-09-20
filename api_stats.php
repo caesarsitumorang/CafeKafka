@@ -15,12 +15,10 @@ try {
     
     $query = "
         SELECT id, nama, deskripsi, harga, kategori, stok, gambar, 'makanan' as table_source 
-        FROM makanan 
-        WHERE stok > 0
+        FROM makanan
         UNION ALL
         SELECT id, nama, deskripsi, harga, kategori, stok, gambar, 'minuman' as table_source 
-        FROM minuman 
-        WHERE stok > 0
+        FROM minuman
         ORDER BY kategori, nama
     ";
     

@@ -1,8 +1,38 @@
 <?php
 if (session_status() == PHP_SESSION_NONE) session_start();
 include "config/koneksi.php";
-$qPembayaran = mysqli_query($koneksi, "SELECT bank, no_rek, pemilik FROM data_cafe LIMIT 1");
-$dataPembayaran = mysqli_fetch_assoc($qPembayaran);
+
+// 🔎 Ambil jam buka/tutup
+date_default_timezone_set("Asia/Jakarta");
+$qCafe = mysqli_query($koneksi, "SELECT jam_buka, jam_closing, bank, no_rek, pemilik FROM data_cafe LIMIT 1");
+$dataCafe = mysqli_fetch_assoc($qCafe);
+$jam_buka    = $dataCafe['jam_buka'] ?? "08:00:00";
+$jam_closing = $dataCafe['jam_closing'] ?? "22:00:00";
+$dataPembayaran = $dataCafe;
+
+// Tentukan status cafe
+$waktu_sekarang = date("H:i:s");
+$status_cafe = "";
+
+// Jika jam tutup < jam buka → operasional lintas hari
+if ($jam_closing < $jam_buka) {
+    if ($waktu_sekarang >= $jam_buka || $waktu_sekarang <= $jam_closing) {
+        $status_cafe = "buka";
+    } elseif ($waktu_sekarang < $jam_buka) {
+        $status_cafe = "belum_buka";
+    } else {
+        $status_cafe = "tutup";
+    }
+} else {
+    if ($waktu_sekarang >= $jam_buka && $waktu_sekarang <= $jam_closing) {
+        $status_cafe = "buka";
+    } elseif ($waktu_sekarang < $jam_buka) {
+        $status_cafe = "belum_buka";
+    } else {
+        $status_cafe = "tutup";
+    }
+}
+
 // 🔒 Cek login
 $id_user = $_SESSION['id_user'] ?? null;
 if (!$id_user) {
@@ -59,8 +89,11 @@ if (isset($_POST['update_jumlah'])) {
 $success_message = "";
 $error_message = "";
 
+// 🚫 Batasi checkout jika cafe tidak buka
 if (isset($_POST['checkout'])) {
-    if (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
+    if ($status_cafe != "buka") {
+        $error_message = "Cafe sedang $status_cafe. Pesanan hanya bisa dilakukan antara jam " . date("H:i", strtotime($jam_buka)) . " - " . date("H:i", strtotime($jam_closing));
+    } elseif (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
         $error_message = "Pilih minimal satu item untuk checkout!";
     } else {
         $selected_items = $_POST['selected_items'];
@@ -81,7 +114,6 @@ if (isset($_POST['checkout'])) {
         foreach ($selected_items as $id_keranjang) {
             $id_keranjang = intval($id_keranjang);
             
-            // Ambil data item dengan quantity terbaru dari database keranjang
             $item_query = mysqli_query($koneksi, "
                 SELECT 
                     k.id,
@@ -97,9 +129,7 @@ if (isset($_POST['checkout'])) {
             ");
             
             if ($item_data = mysqli_fetch_assoc($item_query)) {
-                // Tentukan harga berdasarkan jenis item
                 $harga = $item_data['id_makanan'] ? $item_data['harga_makanan'] : $item_data['harga_minuman'];
-                // Hitung subtotal dengan quantity yang sudah diupdate di database
                 $subtotal = $item_data['jumlah'] * $harga;
                 $total_harga += $subtotal;
             }
@@ -116,17 +146,14 @@ if (isset($_POST['checkout'])) {
                 if (!file_exists('upload')) mkdir('upload', 0755, true);
 
                 if (move_uploaded_file($_FILES['bukti']['tmp_name'], $bukti)) {
-                    // 🗄️ Simpan pesanan utama dengan total yang benar
                     $stmt = $koneksi->prepare("INSERT INTO pesanan (id_pelanggan, total_harga, status, bukti_pembayaran, created_at) VALUES (?, ?, 'pending', ?, NOW())");
                     $stmt->bind_param("ids", $id_pelanggan, $total_harga, $bukti);
                     $stmt->execute();
                     $id_pesanan = $stmt->insert_id;
 
-                    // 📋 Simpan detail pesanan dengan quantity yang benar dari keranjang
                     foreach ($selected_items as $id_keranjang) {
                         $id_keranjang = intval($id_keranjang);
                         
-                        // Ambil data item dengan quantity terbaru dari keranjang
                         $item_query = mysqli_query($koneksi, "
                             SELECT 
                                 k.id_makanan, 
@@ -137,7 +164,6 @@ if (isset($_POST['checkout'])) {
                         ");
                         
                         if ($item_data = mysqli_fetch_assoc($item_query)) {
-                            // Insert ke pesanan_detail dengan quantity yang benar
                             $stmt_detail = $koneksi->prepare("
                                 INSERT INTO pesanan_detail (id_pesanan, id_makanan, id_minuman, jumlah) 
                                 VALUES (?, ?, ?, ?)
@@ -147,13 +173,12 @@ if (isset($_POST['checkout'])) {
                                 $id_pesanan, 
                                 $item_data['id_makanan'], 
                                 $item_data['id_minuman'], 
-                                $item_data['jumlah'] // Menggunakan quantity aktual dari keranjang
+                                $item_data['jumlah']
                             );
                             $stmt_detail->execute();
                         }
                     }
 
-                    // 🧹 Hapus HANYA item yang sudah dicheckout dari keranjang
                     foreach ($selected_items as $id_keranjang) {
                         $id_keranjang = intval($id_keranjang);
                         mysqli_query($koneksi, "DELETE FROM keranjang WHERE id = $id_keranjang AND id_pelanggan = $id_pelanggan");
@@ -195,6 +220,7 @@ $keranjang = mysqli_query($koneksi, "
 $total_items = mysqli_num_rows($keranjang);
 
 ?>
+
 
 <!DOCTYPE html>
 <html lang="id">

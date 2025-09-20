@@ -52,35 +52,64 @@ $cafe = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT bank, no_rek FROM data
 
 // Proses pesanan
 $success_message = "";
+$error_message = "";
+
 if (isset($_POST['pesan'])) {
     $jumlah = intval($_POST['jumlah']);
-    $total_harga = $item['harga'] * $jumlah;
+    
+    // VALIDASI STOK - Ambil stok terbaru dari database
+    $current_item = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT * FROM $table WHERE id=$id"));
+    $stok_tersedia = $current_item['stok'];
+    
+    // Cek apakah jumlah pesanan melebihi stok
+    if ($jumlah > $stok_tersedia) {
+        $error_message = "Pesanan gagal! Jumlah yang Anda pesan ($jumlah) melebihi stok yang tersedia ($stok_tersedia). Silakan kurangi jumlah pesanan.";
+    } else {
+        // Jika stok mencukupi, lanjutkan pemesanan
+        $total_harga = $current_item['harga'] * $jumlah;
 
-    // Upload bukti
-    $bukti = null;
-    if (isset($_FILES['bukti']) && $_FILES['bukti']['error'] == 0) {
-        $ext = pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION);
-        $bukti = "upload/bukti_" . time() . "." . $ext;
-        move_uploaded_file($_FILES['bukti']['tmp_name'], $bukti);
+        // Upload bukti
+        $bukti = null;
+        if (isset($_FILES['bukti']) && $_FILES['bukti']['error'] == 0) {
+            $ext = pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION);
+            $bukti = "upload/bukti_" . time() . "." . $ext;
+            move_uploaded_file($_FILES['bukti']['tmp_name'], $bukti);
+        }
+
+        $id_makanan = ($tipe == "makanan") ? $current_item['id'] : null;
+        $id_minuman = ($tipe == "minuman") ? $current_item['id'] : null;
+
+        // Insert ke tabel pesanan
+        $stmt = $koneksi->prepare("INSERT INTO pesanan (id_pelanggan, id_makanan, id_minuman, total_harga, status, bukti_pembayaran) VALUES (?, ?, ?, ?, 'pending', ?)");
+        $stmt->bind_param("iiiis", $id_pelanggan, $id_makanan, $id_minuman, $total_harga, $bukti);
+        
+        if ($stmt->execute()) {
+            // Ambil id_pesanan terakhir
+            $id_pesanan = $koneksi->insert_id;
+
+            // Insert ke pesanan_detail
+            $stmt_detail = $koneksi->prepare("INSERT INTO pesanan_detail (id_pesanan, id_makanan, id_minuman, jumlah) VALUES (?, ?, ?, ?)");
+            $stmt_detail->bind_param("iiii", $id_pesanan, $id_makanan, $id_minuman, $jumlah);
+            
+            if ($stmt_detail->execute()) {
+                // Update stok setelah pemesanan berhasil
+                $stok_baru = $stok_tersedia - $jumlah;
+                $update_stok = mysqli_query($koneksi, "UPDATE $table SET stok = $stok_baru WHERE id = $id");
+                
+                if ($update_stok) {
+                    $success_message = "Pesanan berhasil dibuat! Stok tersisa: " . $stok_baru;
+                    // Update item array untuk tampilan
+                    $item['stok'] = $stok_baru;
+                } else {
+                    $error_message = "Pesanan berhasil dibuat, namun gagal mengupdate stok.";
+                }
+            } else {
+                $error_message = "Gagal menyimpan detail pesanan.";
+            }
+        } else {
+            $error_message = "Gagal membuat pesanan. Silakan coba lagi.";
+        }
     }
-
-    $id_makanan = ($tipe == "makanan") ? $item['id'] : null;
-    $id_minuman = ($tipe == "minuman") ? $item['id'] : null;
-
-    // Insert ke tabel pesanan
-    $stmt = $koneksi->prepare("INSERT INTO pesanan (id_pelanggan, id_makanan, id_minuman, total_harga, status, bukti_pembayaran) VALUES (?, ?, ?, ?, 'pending', ?)");
-    $stmt->bind_param("iiiis", $id_pelanggan, $id_makanan, $id_minuman, $total_harga, $bukti);
-    $stmt->execute();
-
-    // Ambil id_pesanan terakhir
-    $id_pesanan = $koneksi->insert_id;
-
-    // Insert ke pesanan_detail
-    $stmt_detail = $koneksi->prepare("INSERT INTO pesanan_detail (id_pesanan, id_makanan, id_minuman, jumlah) VALUES (?, ?, ?, ?)");
-    $stmt_detail->bind_param("iiii", $id_pesanan, $id_makanan, $id_minuman, $jumlah);
-    $stmt_detail->execute();
-
-    $success_message = "Pesanan berhasil dibuat!";
 }
 ?>
 
@@ -258,9 +287,27 @@ body {
     border: 1px solid var(--gray-200);
 }
 
+.stat-item.warning {
+    background: #fef3cd;
+    border-color: var(--warning-color);
+}
+
+.stat-item.danger {
+    background: #f8d7da;
+    border-color: var(--accent-color);
+}
+
 .stat-icon {
     color: var(--secondary-color);
     font-size: 1.1rem;
+}
+
+.stat-icon.warning {
+    color: var(--warning-color);
+}
+
+.stat-icon.danger {
+    color: var(--accent-color);
 }
 
 .stat-content {
@@ -280,6 +327,14 @@ body {
     font-weight: 700;
     color: var(--gray-800);
     font-size: 0.9rem;
+}
+
+.stat-value.warning {
+    color: var(--warning-color);
+}
+
+.stat-value.danger {
+    color: var(--accent-color);
 }
 
 /* Payment Info */
@@ -385,6 +440,11 @@ body {
     box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
 }
 
+.form-control.error {
+    border-color: var(--accent-color);
+    background: #fef2f2;
+}
+
 .total-display {
     font-size: 1.25rem;
     font-weight: 800;
@@ -394,6 +454,21 @@ body {
     border-radius: var(--border-radius);
     border: 2px solid var(--success-color);
     text-align: center;
+}
+
+.stock-warning {
+    background: linear-gradient(135deg, #fef3cd, #fde68a);
+    color: #92400e;
+    border: 1px solid var(--warning-color);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    display: none;
+}
+
+.stock-warning.show {
+    display: block;
 }
 
 /* File Upload */
@@ -468,11 +543,18 @@ body {
     box-shadow: var(--shadow);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
     background: linear-gradient(135deg, #2c5282, var(--secondary-color));
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
     color: white;
+}
+
+.btn-primary:disabled {
+    background: var(--gray-400);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .btn-outline {
@@ -488,11 +570,25 @@ body {
     text-decoration: none;
 }
 
-/* Success Alert */
+/* Alert Messages */
 .alert-success {
     background: linear-gradient(135deg, #f0fff4, #c6f6d5);
     color: var(--success-color);
     border: 1px solid #9ae6b4;
+    border-radius: var(--border-radius-lg);
+    padding: 1rem 1.5rem;
+    margin-top: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: var(--shadow);
+}
+
+.alert-error {
+    background: linear-gradient(135deg, #fef2f2, #fecaca);
+    color: var(--accent-color);
+    border: 1px solid #fca5a5;
     border-radius: var(--border-radius-lg);
     padding: 1rem 1.5rem;
     margin-top: 1.5rem;
@@ -577,9 +673,6 @@ body {
 <body>
 
 <div class="container">
-    <!-- Page Header -->
-
-
     <!-- Main Card -->
     <div class="main-card">
         <div class="card-body">
@@ -611,11 +704,18 @@ body {
                                 <div class="stat-value">Rp <?= number_format($item['harga'], 0, ',', '.') ?></div>
                             </div>
                         </div>
-                        <div class="stat-item">
-                            <i class="fas fa-boxes stat-icon"></i>
+                        <div class="stat-item <?= ($item['stok'] <= 5 && $item['stok'] > 0) ? 'warning' : ($item['stok'] == 0 ? 'danger' : '') ?>">
+                            <i class="fas fa-boxes stat-icon <?= ($item['stok'] <= 5 && $item['stok'] > 0) ? 'warning' : ($item['stok'] == 0 ? 'danger' : '') ?>"></i>
                             <div class="stat-content">
                                 <div class="stat-label">Stok</div>
-                                <div class="stat-value"><?= $item['stok'] ?> tersedia</div>
+                                <div class="stat-value <?= ($item['stok'] <= 5 && $item['stok'] > 0) ? 'warning' : ($item['stok'] == 0 ? 'danger' : '') ?>">
+                                    <?= $item['stok'] ?> tersedia
+                                    <?php if ($item['stok'] <= 5 && $item['stok'] > 0): ?>
+                                        (Terbatas!)
+                                    <?php elseif ($item['stok'] == 0): ?>
+                                        (Habis!)
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -640,8 +740,9 @@ body {
                 </div>
             </div>
 
+            <?php if ($item['stok'] > 0): ?>
             <!-- Form Section -->
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" id="orderForm">
                 <div class="form-section">
                     <div class="form-group">
                         <label for="jumlah" class="form-label">
@@ -656,6 +757,10 @@ body {
                                max="<?= $item['stok'] ?>" 
                                value="1" 
                                required>
+                        <div id="stock-warning" class="stock-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Jumlah pesanan melebihi stok yang tersedia!
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -693,7 +798,7 @@ body {
                     </div>
 
                     <div class="button-group">
-                        <button type="submit" name="pesan" class="btn-custom btn-primary">
+                        <button type="submit" name="pesan" id="btnPesan" class="btn-custom btn-primary">
                             <i class="fas fa-shopping-cart"></i>
                             Buat Pesanan
                         </button>
@@ -704,6 +809,19 @@ body {
                     </div>
                 </div>
             </form>
+            <?php else: ?>
+            <!-- Stok Habis -->
+            <div class="alert-error">
+                <i class="fas fa-times-circle"></i>
+                Maaf, stok untuk item ini sudah habis. Silakan pilih menu lainnya.
+            </div>
+            <div class="button-group">
+                <a href="index.php?page=home" class="btn-custom btn-outline">
+                    <i class="fas fa-arrow-left"></i>
+                    Kembali ke Menu
+                </a>
+            </div>
+            <?php endif; ?>
 
             <?php if($success_message): ?>
                 <div class="alert-success">
@@ -711,11 +829,21 @@ body {
                     <?= $success_message ?>
                 </div>
             <?php endif; ?>
+
+            <?php if($error_message): ?>
+                <div class="alert-error">
+                    <i class="fas fa-times-circle"></i>
+                    <?= $error_message ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
 
 <script>
+const maxStock = <?= $item['stok'] ?>;
+const itemPrice = <?= $item['harga'] ?>;
+
 function previewBukti(event) {
     const output = document.getElementById('preview-bukti');
     const file = event.target.files[0];
@@ -734,14 +862,86 @@ function previewBukti(event) {
     }
 }
 
-// Calculate total price when quantity changes
-document.getElementById('jumlah').addEventListener('input', function() {
-    const quantity = parseInt(this.value) || 0;
-    const price = <?= $item['harga'] ?>;
-    const total = quantity * price;
-
+// Validasi stok dan update total harga
+function validateStock() {
+    const jumlahInput = document.getElementById('jumlah');
+    const stockWarning = document.getElementById('stock-warning');
+    const btnPesan = document.getElementById('btnPesan');
+    const quantity = parseInt(jumlahInput.value) || 0;
+    
+    // Update total harga
+    const total = quantity * itemPrice;
     document.getElementById('total-harga').innerText = 
         "Rp " + total.toLocaleString('id-ID');
+    
+    // Validasi stok
+    if (quantity > maxStock) {
+        // Jumlah melebihi stok
+        stockWarning.classList.add('show');
+        jumlahInput.classList.add('error');
+        btnPesan.disabled = true;
+        btnPesan.innerHTML = '<i class="fas fa-times"></i> Stok Tidak Mencukupi';
+    } else if (quantity <= 0) {
+        // Jumlah tidak valid
+        stockWarning.classList.remove('show');
+        jumlahInput.classList.add('error');
+        btnPesan.disabled = true;
+        btnPesan.innerHTML = '<i class="fas fa-times"></i> Jumlah Tidak Valid';
+    } else {
+        // Jumlah valid
+        stockWarning.classList.remove('show');
+        jumlahInput.classList.remove('error');
+        btnPesan.disabled = false;
+        btnPesan.innerHTML = '<i class="fas fa-shopping-cart"></i> Buat Pesanan';
+    }
+}
+
+// Event listeners
+document.getElementById('jumlah').addEventListener('input', validateStock);
+document.getElementById('jumlah').addEventListener('change', validateStock);
+
+// Validasi saat form akan di-submit
+document.getElementById('orderForm')?.addEventListener('submit', function(e) {
+    const quantity = parseInt(document.getElementById('jumlah').value) || 0;
+    
+    if (quantity > maxStock) {
+        e.preventDefault();
+        alert(`Jumlah pesanan (${quantity}) melebihi stok yang tersedia (${maxStock}). Silakan kurangi jumlah pesanan.`);
+        return false;
+    }
+    
+    if (quantity <= 0) {
+        e.preventDefault();
+        alert('Jumlah pesanan harus lebih dari 0.');
+        return false;
+    }
+    
+    // Konfirmasi pesanan
+    const total = quantity * itemPrice;
+    const confirmation = confirm(
+        `Konfirmasi Pesanan:\n\n` +
+        `Item: <?= htmlspecialchars($item['nama']) ?>\n` +
+        `Jumlah: ${quantity}\n` +
+        `Total Harga: Rp ${total.toLocaleString('id-ID')}\n\n` +
+        `Pastikan Anda sudah melakukan pembayaran dan mengupload bukti pembayaran. Lanjutkan?`
+    );
+    
+    if (!confirmation) {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// Jalankan validasi awal
+validateStock();
+
+// Auto-adjust jumlah jika melebihi stok saat halaman dimuat
+window.addEventListener('DOMContentLoaded', function() {
+    const jumlahInput = document.getElementById('jumlah');
+    if (parseInt(jumlahInput.value) > maxStock) {
+        jumlahInput.value = maxStock;
+        validateStock();
+    }
 });
 </script>
 

@@ -339,6 +339,12 @@ html, body {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+.status-select:disabled {
+    background: #f7fafc;
+    color: #a0aec0;
+    cursor: not-allowed;
+}
+
 .save-btn {
     padding: 12px 20px;
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -355,10 +361,17 @@ html, body {
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-.save-btn:hover {
+.save-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #059669 0%, #047857 100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.save-btn:disabled {
+    background: #a0aec0;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 /* Back Button */
@@ -381,6 +394,49 @@ html, body {
     background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+}
+
+/* Alert Messages */
+.alert {
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    color: #065f46;
+    border: 1px solid #34d399;
+}
+
+.alert-error {
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    color: #991b1b;
+    border: 1px solid #f87171;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fffbeb 0%, #fed7aa 100%);
+    color: #92400e;
+    border: 1px solid #fbbf24;
+}
+
+/* Status Flow Info */
+.status-info {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #93c5fd;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    color: #1e40af;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 /* Responsive */
@@ -466,7 +522,63 @@ html, body {
 include "config/koneksi.php";
 
 $id = $_GET['id'] ?? 0;
+$alert_message = '';
+$alert_type = '';
 
+// Function to update stock when order is accepted
+function updateStock($koneksi, $id_pesanan) {
+    $queryDetail = "
+        SELECT pd.id_makanan, pd.id_minuman, pd.jumlah
+        FROM pesanan_detail pd
+        WHERE pd.id_pesanan = ?
+    ";
+    $stmtDetail = $koneksi->prepare($queryDetail);
+    $stmtDetail->bind_param("i", $id_pesanan);
+    $stmtDetail->execute();
+    $result = $stmtDetail->get_result();
+    
+    $stock_errors = [];
+    
+    while ($item = $result->fetch_assoc()) {
+        if (!empty($item['id_makanan'])) {
+            // Update stock for makanan
+            $checkStock = $koneksi->prepare("SELECT stok FROM makanan WHERE id = ?");
+            $checkStock->bind_param("i", $item['id_makanan']);
+            $checkStock->execute();
+            $stockResult = $checkStock->get_result();
+            $stockData = $stockResult->fetch_assoc();
+            
+            if ($stockData && $stockData['stok'] >= $item['jumlah']) {
+                $updateMakanan = $koneksi->prepare("UPDATE makanan SET stok = stok - ? WHERE id = ?");
+                $updateMakanan->bind_param("ii", $item['jumlah'], $item['id_makanan']);
+                $updateMakanan->execute();
+            } else {
+                $stock_errors[] = "Stok makanan tidak mencukupi";
+            }
+        }
+        
+        if (!empty($item['id_minuman'])) {
+            // Update stock for minuman
+            $checkStock = $koneksi->prepare("SELECT stok FROM minuman WHERE id = ?");
+            $checkStock->bind_param("i", $item['id_minuman']);
+            $checkStock->execute();
+            $stockResult = $checkStock->get_result();
+            $stockData = $stockResult->fetch_assoc();
+            
+            if ($stockData && $stockData['stok'] >= $item['jumlah']) {
+                $updateMinuman = $koneksi->prepare("UPDATE minuman SET stok = stok - ? WHERE id = ?");
+                $updateMinuman->bind_param("ii", $item['jumlah'], $item['id_minuman']);
+                $updateMinuman->execute();
+            } else {
+                $stock_errors[] = "Stok minuman tidak mencukupi";
+            }
+        }
+    }
+    
+    return $stock_errors;
+}
+
+// Get order data
 $queryPesanan = "
     SELECT p.id, p.id_pelanggan, pl.nama_lengkap, p.total_harga, p.status, 
            p.bukti_pembayaran, p.catatan, p.created_at
@@ -485,10 +597,14 @@ if(!$data){
     exit;
 }
 
+// Get order details
 $queryDetail = "
     SELECT 
         COALESCE(m.nama, mn.nama) AS nama_item,
-        pd.jumlah
+        pd.jumlah,
+        pd.id_makanan,
+        pd.id_minuman,
+        COALESCE(m.stok, mn.stok) AS stok_tersedia
     FROM pesanan_detail pd
     LEFT JOIN makanan m ON pd.id_makanan = m.id
     LEFT JOIN minuman mn ON pd.id_minuman = mn.id
@@ -499,20 +615,100 @@ $stmtDetail->bind_param("i", $id);
 $stmtDetail->execute();
 $resDetail = $stmtDetail->get_result();
 
+// Handle status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
     $newStatus = $_POST['status'];
-    $update = $koneksi->prepare("UPDATE pesanan SET status = ? WHERE id = ?");
-    $update->bind_param("si", $newStatus, $id);
-    if ($update->execute()) {
-        echo "<script>alert('Status pesanan berhasil diperbarui'); window.location='index_admin.php?page_admin=home_admin&id=$id';</script>";
-        exit;
+    $currentStatus = $data['status'];
+    
+    // Define allowed status transitions
+    $allowedTransitions = [
+        'pending' => ['diterima'],
+        'diterima' => ['diproses'],
+        'diproses' => ['selesai'],
+        'selesai' => []
+    ];
+    
+    // Check if transition is allowed
+    if (!in_array($newStatus, $allowedTransitions[$currentStatus])) {
+        $alert_message = "Transisi status tidak diizinkan!";
+        $alert_type = 'error';
     } else {
-        echo "<script>alert('Gagal memperbarui status');</script>";
+        // If changing from pending to diterima, check and update stock
+        if ($currentStatus === 'pending' && $newStatus === 'diterima') {
+            $stock_errors = updateStock($koneksi, $id);
+            
+            if (!empty($stock_errors)) {
+                $alert_message = "Gagal mengubah status: " . implode(', ', $stock_errors);
+                $alert_type = 'error';
+            } else {
+                // Update status
+                $update = $koneksi->prepare("UPDATE pesanan SET status = ? WHERE id = ?");
+                $update->bind_param("si", $newStatus, $id);
+                if ($update->execute()) {
+                    $alert_message = "Status pesanan berhasil diperbarui dan stok telah dikurangi";
+                    $alert_type = 'success';
+                    $data['status'] = $newStatus; // Update current data
+                } else {
+                    $alert_message = "Gagal memperbarui status";
+                    $alert_type = 'error';
+                }
+            }
+        } else {
+            // Regular status update without stock changes
+            $update = $koneksi->prepare("UPDATE pesanan SET status = ? WHERE id = ?");
+            $update->bind_param("si", $newStatus, $id);
+            if ($update->execute()) {
+                $alert_message = "Status pesanan berhasil diperbarui";
+                $alert_type = 'success';
+                $data['status'] = $newStatus; // Update current data
+            } else {
+                $alert_message = "Gagal memperbarui status";
+                $alert_type = 'error';
+            }
+        }
     }
+}
+
+// Get next allowed status
+$nextStatus = '';
+$statusInfo = '';
+$allowedTransitions = [
+    'pending' => ['diterima'],
+    'diterima' => ['diproses'],
+    'diproses' => ['selesai'],
+    'selesai' => []
+];
+
+if (!empty($allowedTransitions[$data['status']])) {
+    $nextStatus = $allowedTransitions[$data['status']][0];
+}
+
+// Set status info message
+switch($data['status']) {
+    case 'pending':
+        $statusInfo = 'Pesanan menunggu konfirmasi. Selanjutnya: Diterima';
+        break;
+    case 'diterima':
+        $statusInfo = 'Pesanan telah diterima. Selanjutnya: Diproses';
+        break;
+    case 'diproses':
+        $statusInfo = 'Pesanan sedang diproses. Selanjutnya: Selesai';
+        break;
+    case 'selesai':
+        $statusInfo = 'Pesanan telah selesai. Tidak ada perubahan status selanjutnya.';
+        break;
 }
 ?>
 
 <div class="detail-container">
+    <!-- Alert Messages -->
+    <?php if ($alert_message): ?>
+    <div class="alert alert-<?= $alert_type ?>">
+        <i class="fas fa-<?= $alert_type === 'success' ? 'check-circle' : ($alert_type === 'error' ? 'times-circle' : 'exclamation-triangle') ?>"></i>
+        <?= htmlspecialchars($alert_message) ?>
+    </div>
+    <?php endif; ?>
+
     <!-- Page Header -->
     <div class="page-header">
         <h3>
@@ -556,33 +752,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
         </div>
 
         <div class="info-card">
-        <div class="label">
-            <i class="fas fa-receipt"></i>
-            Bukti Pembayaran
-        </div>
-        <div class="value">
-            <?php if (!empty($data['bukti_pembayaran'])): ?>
-                <?php 
-                    $file = htmlspecialchars($data['bukti_pembayaran']); 
-                    $file = str_replace("upload/", "", $file);
-
-                    $path = "../upload/" . $file; 
-                    $fullPath = __DIR__ . "/../upload/" . $file;
-                ?>
-                <?php if (file_exists($fullPath)): ?>
-                    <img src="<?= $path ?>" 
-                        alt="Bukti Pembayaran" 
-                        class="payment-image"
-                        onclick="openImageOverlay(this.src)">
+            <div class="label">
+                <i class="fas fa-receipt"></i>
+                Bukti Pembayaran
+            </div>
+            <div class="value">
+                <?php if (!empty($data['bukti_pembayaran'])): ?>
+                    <?php 
+                        $file = htmlspecialchars($data['bukti_pembayaran']); 
+                        $file = str_replace("upload/", "", $file);
+                        $path = "../upload/" . $file; 
+                        $fullPath = __DIR__ . "/../upload/" . $file;
+                    ?>
+                    <?php if (file_exists($fullPath)): ?>
+                        <img src="<?= $path ?>" 
+                            alt="Bukti Pembayaran" 
+                            class="payment-image"
+                            onclick="openImageOverlay(this.src)">
+                    <?php else: ?>
+                        <span style="color: red; font-style: italic;">File tidak ditemukan</span>
+                    <?php endif; ?>
                 <?php else: ?>
-                    <span style="color: red; font-style: italic;">File tidak ditemukan (<?= $path ?>)</span>
+                    <span style="color: #a0aec0; font-style: italic;">-</span>
                 <?php endif; ?>
-            <?php else: ?>
-                <span style="color: #a0aec0; font-style: italic;">-</span>
-            <?php endif; ?>
+            </div>
         </div>
-</div>
-
 
         <?php if($data['catatan']): ?>
         <div class="info-card" style="grid-column: 1 / -1;">
@@ -607,10 +801,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
                 <tr>
                     <th><i class="fas fa-list"></i> Nama Item</th>
                     <th style="text-align: center;"><i class="fas fa-sort-numeric-up"></i> Jumlah</th>
+                    <th style="text-align: center;"><i class="fas fa-boxes"></i> Stok Tersedia</th>
                 </tr>
             </thead>
             <tbody>
                 <?php 
+                $resDetail->data_seek(0); // Reset result pointer
                 while($d = $resDetail->fetch_assoc()): 
                 ?>
                 <tr>
@@ -618,12 +814,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
                     <td style="text-align: center;">
                         <span class="quantity-badge"><?= $d['jumlah'] ?></span>
                     </td>
+                    <td style="text-align: center;">
+                        <span style="color: <?= ($d['stok_tersedia'] < $d['jumlah']) ? '#dc2626' : '#059669' ?>; font-weight: 600;">
+                            <?= $d['stok_tersedia'] ?>
+                        </span>
+                    </td>
                 </tr>
                 <?php endwhile; ?>
             </tbody>
             <tfoot>
                 <tr>
-                    <td style="text-align: right;">
+                    <td colspan="2" style="text-align: right;">
                         <strong>Total Harga</strong>
                     </td>
                     <td style="text-align: center;">
@@ -643,20 +844,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
             Ubah Status Pesanan
         </h4>
         
+        <!-- Status Flow Information -->
+        <div class="status-info">
+            <i class="fas fa-info-circle"></i>
+            <?= $statusInfo ?>
+        </div>
+        
         <form method="POST" class="status-form">
             <label for="status">
                 <i class="fas fa-tags"></i>
-                Ubah Status:
+                Status Saat Ini: <strong><?= ucfirst($data['status']) ?></strong>
             </label>
-            <select name="status" id="status" class="status-select">
-                <option value="diterima" <?= $data['status']=='diterima'?'selected':'' ?>>Diterima</option>
-                <option value="diproses" <?= $data['status']=='diproses'?'selected':'' ?>>Diproses</option>
-                <option value="selesai" <?= $data['status']=='selesai'?'selected':'' ?>>Selesai</option>
-            </select>
-            <button type="submit" class="save-btn">
-                <i class="fas fa-save"></i>
-                Simpan
-            </button>
+            
+            <?php if ($nextStatus): ?>
+                <input type="hidden" name="status" value="<?= $nextStatus ?>">
+                <button type="submit" class="save-btn" onclick="return confirm('Apakah Anda yakin ingin mengubah status pesanan ke <?= ucfirst($nextStatus) ?>?')">
+                    <i class="fas fa-arrow-right"></i>
+                    Ubah ke <?= ucfirst($nextStatus) ?>
+                    <?php if ($data['status'] === 'pending' && $nextStatus === 'diterima'): ?>
+                        <small style="display: block; font-size: 0.8em; opacity: 0.8;">(Stok akan dikurangi)</small>
+                    <?php endif; ?>
+                </button>
+            <?php else: ?>
+                <button type="button" class="save-btn" disabled>
+                    <i class="fas fa-check"></i>
+                    Pesanan Selesai
+                </button>
+            <?php endif; ?>
         </form>
     </div>
 
@@ -685,6 +899,18 @@ document.addEventListener('DOMContentLoaded', function() {
             card.style.opacity = '1';
             card.style.transform = 'translateY(0)';
         }, index * 100);
+    });
+
+    // Auto-hide alert messages after 5 seconds
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                alert.remove();
+            }, 300);
+        }, 5000);
     });
 });
 
@@ -724,5 +950,31 @@ document.addEventListener('keydown', function(e) {
 // Prevent closing when clicking on the image itself
 document.getElementById('overlayImage').addEventListener('click', function(e) {
     e.stopPropagation();
+});
+
+// Add click animation to buttons
+document.querySelectorAll('.save-btn, .back-btn').forEach(button => {
+    button.addEventListener('click', function(e) {
+        if (!this.disabled) {
+            this.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 100);
+        }
+    });
+});
+
+// Stock warning for items with insufficient stock
+document.addEventListener('DOMContentLoaded', function() {
+    const stockCells = document.querySelectorAll('td[style*="color: #dc2626"]');
+    if (stockCells.length > 0) {
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'alert alert-warning';
+        warningDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Perhatian: Beberapa item memiliki stok yang tidak mencukupi!';
+        
+        const container = document.querySelector('.detail-container');
+        const pageHeader = container.querySelector('.page-header');
+        container.insertBefore(warningDiv, pageHeader.nextSibling);
+    }
 });
 </script>
