@@ -49,7 +49,6 @@ $waktu_sekarang = date("H:i:s");
 // Status cafe
 $status_cafe = "";
 
-// Jika jam tutup < jam buka → operasional lintas hari
 if ($jam_closing < $jam_buka) {
     if ($waktu_sekarang >= $jam_buka || $waktu_sekarang <= $jam_closing) {
         $status_cafe = "buka";

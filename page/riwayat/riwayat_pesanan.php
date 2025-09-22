@@ -528,12 +528,6 @@ function getDetailPesanan($koneksi, $id_pesanan) {
                                                     title="Lihat Detail">
                                                 <i class="fas fa-eye me-1"></i>Detail
                                             </button>
-                                            <button type="button" 
-                                                    class="btn btn-secondary-compact btn-compact"
-                                                    onclick="downloadReceipt(<?= $row['id'] ?>)"
-                                                    title="Unduh Struk">
-                                                <i class="fas fa-download me-1"></i>Struk
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
