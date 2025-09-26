@@ -125,6 +125,11 @@ html, body {
     color: white;
 }
 
+.status-ditolak {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    color: white;
+}
+
 /* Payment Proof Image */
 .payment-image {
     max-width: 200px;
@@ -374,6 +379,43 @@ html, body {
     box-shadow: none;
 }
 
+/* Reject Button */
+.reject-btn {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.reject-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+}
+
+.reject-btn:disabled {
+    background: #a0aec0;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Button Container for Pending Status */
+.button-container {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
 /* Back Button */
 .back-btn {
     display: inline-flex;
@@ -489,6 +531,17 @@ html, body {
     
     .status-select {
         width: 100%;
+    }
+    
+    .button-container {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .button-container .save-btn,
+    .button-container .reject-btn {
+        width: 100%;
+        justify-content: center;
     }
     
     .close-overlay {
@@ -622,10 +675,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
     
     // Define allowed status transitions
     $allowedTransitions = [
-        'pending' => ['diterima'],
+        'pending' => ['diterima', 'ditolak'],
         'diterima' => ['diproses'],
         'diproses' => ['selesai'],
-        'selesai' => []
+        'selesai' => [],
+        'ditolak' => []
     ];
     
     // Check if transition is allowed
@@ -633,8 +687,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
         $alert_message = "Transisi status tidak diizinkan!";
         $alert_type = 'error';
     } else {
+        // Handle rejection
+        if ($newStatus === 'ditolak') {
+            $update = $koneksi->prepare("UPDATE pesanan SET status = ? WHERE id = ?");
+            $update->bind_param("si", $newStatus, $id);
+            if ($update->execute()) {
+                $alert_message = "Pesanan berhasil ditolak";
+                $alert_type = 'success';
+                $data['status'] = $newStatus; // Update current data
+            } else {
+                $alert_message = "Gagal menolak pesanan";
+                $alert_type = 'error';
+            }
+        }
         // If changing from pending to diterima, check and update stock
-        if ($currentStatus === 'pending' && $newStatus === 'diterima') {
+        else if ($currentStatus === 'pending' && $newStatus === 'diterima') {
             $stock_errors = updateStock($koneksi, $id);
             
             if (!empty($stock_errors)) {
@@ -676,7 +743,8 @@ $allowedTransitions = [
     'pending' => ['diterima'],
     'diterima' => ['diproses'],
     'diproses' => ['selesai'],
-    'selesai' => []
+    'selesai' => [],
+    'ditolak' => []
 ];
 
 if (!empty($allowedTransitions[$data['status']])) {
@@ -686,7 +754,7 @@ if (!empty($allowedTransitions[$data['status']])) {
 // Set status info message
 switch($data['status']) {
     case 'pending':
-        $statusInfo = 'Pesanan menunggu konfirmasi. Selanjutnya: Diterima';
+        $statusInfo = 'Pesanan menunggu konfirmasi. Selanjutnya: Diterima atau Ditolak';
         break;
     case 'diterima':
         $statusInfo = 'Pesanan telah diterima. Selanjutnya: Diproses';
@@ -696,6 +764,9 @@ switch($data['status']) {
         break;
     case 'selesai':
         $statusInfo = 'Pesanan telah selesai. Tidak ada perubahan status selanjutnya.';
+        break;
+    case 'ditolak':
+        $statusInfo = 'Pesanan telah ditolak. Tidak ada perubahan status selanjutnya.';
         break;
 }
 ?>
@@ -856,19 +927,31 @@ switch($data['status']) {
                 Status Saat Ini: <strong><?= ucfirst($data['status']) ?></strong>
             </label>
             
-            <?php if ($nextStatus): ?>
-                <input type="hidden" name="status" value="<?= $nextStatus ?>">
-                <button type="submit" class="save-btn" onclick="return confirm('Apakah Anda yakin ingin mengubah status pesanan ke <?= ucfirst($nextStatus) ?>?')">
+            <?php if ($data['status'] === 'pending'): ?>
+                <!-- Special handling for pending status - show both accept and reject buttons -->
+                <div class="button-container">
+                    <button type="submit" name="status" value="diterima" class="save-btn" onclick="return confirm('Apakah Anda yakin ingin menerima pesanan ini? Stok akan dikurangi secara otomatis.')">
+                        <i class="fas fa-check"></i>
+                        Terima Pesanan
+                        <small style="display: block; font-size: 0.8em; opacity: 0.8;">(Stok akan dikurangi)</small>
+                    </button>
+                    
+                    <button type="submit" name="status" value="ditolak" class="reject-btn" onclick="return confirm('Apakah Anda yakin ingin menolak pesanan ini? Tindakan ini tidak dapat dibatalkan.')">
+                        <i class="fas fa-times"></i>
+                        Tolak Pesanan
+                    </button>
+                </div>
+            <?php elseif ($nextStatus): ?>
+                <!-- Regular status progression -->
+                <button type="submit" name="status" value="<?= $nextStatus ?>" class="save-btn" onclick="return confirm('Apakah Anda yakin ingin mengubah status pesanan ke <?= ucfirst($nextStatus) ?>?')">
                     <i class="fas fa-arrow-right"></i>
                     Ubah ke <?= ucfirst($nextStatus) ?>
-                    <?php if ($data['status'] === 'pending' && $nextStatus === 'diterima'): ?>
-                        <small style="display: block; font-size: 0.8em; opacity: 0.8;">(Stok akan dikurangi)</small>
-                    <?php endif; ?>
                 </button>
             <?php else: ?>
+                <!-- Final status - no more changes allowed -->
                 <button type="button" class="save-btn" disabled>
                     <i class="fas fa-check"></i>
-                    Pesanan Selesai
+                    <?= $data['status'] === 'selesai' ? 'Pesanan Selesai' : 'Pesanan Ditolak' ?>
                 </button>
             <?php endif; ?>
         </form>
@@ -953,7 +1036,7 @@ document.getElementById('overlayImage').addEventListener('click', function(e) {
 });
 
 // Add click animation to buttons
-document.querySelectorAll('.save-btn, .back-btn').forEach(button => {
+document.querySelectorAll('.save-btn, .reject-btn, .back-btn').forEach(button => {
     button.addEventListener('click', function(e) {
         if (!this.disabled) {
             this.style.transform = 'scale(0.98)';
@@ -976,5 +1059,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const pageHeader = container.querySelector('.page-header');
         container.insertBefore(warningDiv, pageHeader.nextSibling);
     }
+});
+
+// Enhanced button hover effects for accept/reject buttons
+document.querySelectorAll('.save-btn, .reject-btn').forEach(button => {
+    button.addEventListener('mouseenter', function() {
+        if (!this.disabled) {
+            this.style.transform = 'translateY(-2px) scale(1.02)';
+        }
+    });
+    
+    button.addEventListener('mouseleave', function() {
+        if (!this.disabled) {
+            this.style.transform = 'translateY(0) scale(1)';
+        }
+    });
 });
 </script>

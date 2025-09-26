@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $harga      = $_POST['harga'];
     $kategori   = $_POST['kategori'];
     $deskripsi  = $_POST['deskripsi'];
+    $stok       = $_POST['stok'];
 
     // Cek apakah ada file gambar baru
     if (!empty($_FILES['gambar']['name'])) {
@@ -33,13 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Pindahkan file
         move_uploaded_file($tmp, $folder . $gambar);
 
-        // Update dengan gambar baru
-        $update = $koneksi->prepare("UPDATE minuman SET nama=?, harga=?, kategori=?, deskripsi=?, gambar=? WHERE id=?");
-        $update->bind_param("sdsssi", $nama, $harga, $kategori, $deskripsi, $gambar, $id);
+        $update = $koneksi->prepare("UPDATE minuman SET nama=?, harga=?, kategori=?, deskripsi=?, stok=?, gambar=? WHERE id=?");
+        $update->bind_param("sdssisi", $nama, $harga, $kategori, $deskripsi, $stok, $gambar, $id);
     } else {
-        // Update tanpa gambar
-        $update = $koneksi->prepare("UPDATE minuman SET nama=?, harga=?, kategori=?, deskripsi=? WHERE id=?");
-        $update->bind_param("sdssi", $nama, $harga, $kategori, $deskripsi, $id);
+        $update = $koneksi->prepare("UPDATE minuman SET nama=?, harga=?, kategori=?, deskripsi=?, stok=? WHERE id=?");
+        $update->bind_param("sdssii", $nama, $harga, $kategori, $deskripsi, $stok, $id);
     }
 
     if ($update->execute()) {
@@ -57,7 +56,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   <title>Edit Minuman</title>
   <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 
   <style>
@@ -151,6 +149,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="form-group">
           <label>Kategori</label>
           <input type="text" name="kategori" value="<?= htmlspecialchars($minuman['kategori']) ?>" required>
+        </div>
+        <div class="form-group">
+          <label>Stok</label>
+          <input type="number" name="stok" value="<?= $minuman['stok'] ?>" required>
         </div>
         <div class="form-group" style="grid-column: span 2;">
           <label>Deskripsi</label>

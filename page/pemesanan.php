@@ -57,15 +57,16 @@ $error_message = "";
 if (isset($_POST['pesan'])) {
     $jumlah = intval($_POST['jumlah']);
     
-    // VALIDASI STOK - Ambil stok terbaru dari database
+    // VALIDASI STOK (opsional)
     $current_item = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT * FROM $table WHERE id=$id"));
     $stok_tersedia = $current_item['stok'];
     
-    // Cek apakah jumlah pesanan melebihi stok
-    if ($jumlah > $stok_tersedia) {
-        $error_message = "Pesanan gagal! Jumlah yang Anda pesan ($jumlah) melebihi stok yang tersedia ($stok_tersedia). Silakan kurangi jumlah pesanan.";
+    if ($jumlah <= 0) {
+        $error_message = "Jumlah pesanan tidak valid.";
+    } elseif ($jumlah > $stok_tersedia) {
+        // Hanya untuk informasi, stok tidak dikurangi
+        $error_message = "Jumlah yang Anda pesan ($jumlah) melebihi stok yang tersedia ($stok_tersedia). Silakan sesuaikan jumlah pesanan.";
     } else {
-        // Jika stok mencukupi, lanjutkan pemesanan
         $total_harga = $current_item['harga'] * $jumlah;
 
         // Upload bukti
@@ -79,12 +80,11 @@ if (isset($_POST['pesan'])) {
         $id_makanan = ($tipe == "makanan") ? $current_item['id'] : null;
         $id_minuman = ($tipe == "minuman") ? $current_item['id'] : null;
 
-        // Insert ke tabel pesanan
+        // Insert ke tabel pesanan tanpa mengurangi stok
         $stmt = $koneksi->prepare("INSERT INTO pesanan (id_pelanggan, id_makanan, id_minuman, total_harga, status, bukti_pembayaran) VALUES (?, ?, ?, ?, 'pending', ?)");
         $stmt->bind_param("iiiis", $id_pelanggan, $id_makanan, $id_minuman, $total_harga, $bukti);
         
         if ($stmt->execute()) {
-            // Ambil id_pesanan terakhir
             $id_pesanan = $koneksi->insert_id;
 
             // Insert ke pesanan_detail
@@ -92,17 +92,7 @@ if (isset($_POST['pesan'])) {
             $stmt_detail->bind_param("iiii", $id_pesanan, $id_makanan, $id_minuman, $jumlah);
             
             if ($stmt_detail->execute()) {
-                // Update stok setelah pemesanan berhasil
-                $stok_baru = $stok_tersedia - $jumlah;
-                $update_stok = mysqli_query($koneksi, "UPDATE $table SET stok = $stok_baru WHERE id = $id");
-                
-                if ($update_stok) {
-                    $success_message = "Pesanan berhasil dibuat! Stok tersisa: " . $stok_baru;
-                    // Update item array untuk tampilan
-                    $item['stok'] = $stok_baru;
-                } else {
-                    $error_message = "Pesanan berhasil dibuat, namun gagal mengupdate stok.";
-                }
+                $success_message = "Pesanan berhasil dibuat! Stok tidak berkurang.";
             } else {
                 $error_message = "Gagal menyimpan detail pesanan.";
             }

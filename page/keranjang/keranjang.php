@@ -198,7 +198,7 @@ if (isset($_POST['checkout'])) {
                         $stmt->execute();
                         $id_pesanan = $stmt->insert_id;
 
-                        // Simpan detail pesanan dan kurangi stok
+                        // Simpan detail pesanan (tanpa mengurangi stok)
                         foreach ($selected_items as $id_keranjang) {
                             $id_keranjang = intval($id_keranjang);
                             
@@ -225,13 +225,6 @@ if (isset($_POST['checkout'])) {
                                     $item_data['jumlah']
                                 );
                                 $stmt_detail->execute();
-
-                                // Kurangi stok
-                                if ($item_data['id_makanan']) {
-                                    mysqli_query($koneksi, "UPDATE makanan SET stok = stok - " . $item_data['jumlah'] . " WHERE id = " . $item_data['id_makanan']);
-                                } else {
-                                    mysqli_query($koneksi, "UPDATE minuman SET stok = stok - " . $item_data['jumlah'] . " WHERE id = " . $item_data['id_minuman']);
-                                }
                             }
                         }
 
@@ -761,12 +754,12 @@ $total_items = mysqli_num_rows($keranjang);
                                 <button type="submit" name="update_jumlah" class="btn btn-warning-custom btn-custom">
                                     <i class="fas fa-sync-alt me-2"></i>Update Keranjang
                                 </button>
-                                <div>
+                                <!-- <div>
                                     <span class="text-muted me-3">Total Items: <span id="selectedItemCount">0</span></span>
                                     <button type="button" class="btn btn-danger-custom btn-custom" onclick="clearSelected()">
                                         <i class="fas fa-trash-alt me-2"></i>Hapus Terpilih
                                     </button>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                     </form>
