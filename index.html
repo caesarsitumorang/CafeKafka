@@ -838,6 +838,21 @@
       `;
     }
 
+    function addToCart(item) {
+    let cart = JSON.parse(localStorage.getItem('selectedItems') || '[]');
+    
+    const existing = cart.find(i => i.id === item.id && i.table_source === item.table_source);
+    if (existing) {
+        existing.qty++;
+    } else {
+        cart.push({...item, qty: 1, type: item.table_source});
+    }
+    
+    localStorage.setItem('selectedItems', JSON.stringify(cart));
+    alert('Ditambahkan ke keranjang!');
+    window.location.href = 'pesan_langsung.php';
+}
+
     function renderMenuItems() {
       const menuGrid = document.getElementById('menuGrid');
       if (!menuItems || menuItems.length === 0) {
@@ -872,9 +887,9 @@
             <p>${item.deskripsi}</p>
             <div class="menu-item-footer">
               <span class="price">${item.harga_formatted}</span>
-              <button class="add-to-cart" onclick="window.location.href='login.php'">
-                <i class="fas fa-shopping-cart"></i> Pesan
-              </button>
+              <button class="add-to-cart" onclick="addToCart(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+    <i class="fas fa-shopping-cart"></i> Pesan
+</button>
             </div>
           </div>
         `;

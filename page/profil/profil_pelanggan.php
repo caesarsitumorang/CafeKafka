@@ -180,6 +180,12 @@ $foto = !empty($pelanggan['foto']) && $pelanggan['foto'] !== '-' ? $pelanggan['f
         <p><?= !empty($pelanggan['alamat']) ? htmlspecialchars($pelanggan['alamat']) : '-' ?></p>
     </div>
 
+    <div class="profile-group">
+        <i class="fas fa-map-marker-alt"></i>
+        <label>Detail Alamat</label>
+        <p><?= !empty($pelanggan['detail_alamat']) ? htmlspecialchars($pelanggan['detail_alamat']) : '-' ?></p>
+    </div>
+
     <?php if ($is_member): ?>
     <div class="profile-group">
         <i class="fas fa-info-circle"></i>

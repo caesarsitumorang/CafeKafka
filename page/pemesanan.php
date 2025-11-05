@@ -39,7 +39,6 @@ if (!$tipe || !$id) {
     exit;
 }
 
-// Ambil item
 $table = ($tipe == 'makanan') ? 'makanan' : 'minuman';
 $item = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT * FROM $table WHERE id=$id"));
 if (!$item) {
@@ -81,7 +80,7 @@ if (isset($_POST['pesan'])) {
         $id_minuman = ($tipe == "minuman") ? $current_item['id'] : null;
 
         // Insert ke tabel pesanan tanpa mengurangi stok
-        $stmt = $koneksi->prepare("INSERT INTO pesanan (id_pelanggan, id_makanan, id_minuman, total_harga, status, bukti_pembayaran) VALUES (?, ?, ?, ?, 'pending', ?)");
+        $stmt = $koneksi->prepare("INSERT INTO pesanan (id_pelanggan, id_makanan, id_minuman, total_harga, status, bukti_pembayaran, detail_alamat, latitude, longitude) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)");
         $stmt->bind_param("iiiis", $id_pelanggan, $id_makanan, $id_minuman, $total_harga, $bukti);
         
         if ($stmt->execute()) {
@@ -92,7 +91,7 @@ if (isset($_POST['pesan'])) {
             $stmt_detail->bind_param("iiii", $id_pesanan, $id_makanan, $id_minuman, $jumlah);
             
             if ($stmt_detail->execute()) {
-                $success_message = "Pesanan berhasil dibuat! Stok tidak berkurang.";
+                $success_message = "Pesanan berhasil dibuat! Silakan tunggu konfirmasi dari kami di halaman pesanan.";
             } else {
                 $error_message = "Gagal menyimpan detail pesanan.";
             }
@@ -866,7 +865,6 @@ function validateStock() {
     
     // Validasi stok
     if (quantity > maxStock) {
-        // Jumlah melebihi stok
         stockWarning.classList.add('show');
         jumlahInput.classList.add('error');
         btnPesan.disabled = true;

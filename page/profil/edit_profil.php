@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'];
     $no_hp = $_POST['no_hp'];
     $alamat = $_POST['alamat'];
+    $detail_alamat = $_POST['detail_alamat'];
     $password = $_POST['password'] ?? '';
     $foto = $pelanggan['foto'];
 
@@ -40,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         email='$email',
         no_hp='$no_hp',
         alamat='$alamat',
+        detail_alamat='$detail_alamat',
         foto='$foto'
         WHERE id_pelanggan='$id_pelanggan'";
 
@@ -214,6 +216,11 @@ textarea {
                 <div class="form-group">
                     <label>Alamat</label>
                     <textarea name="alamat"><?= $pelanggan['alamat'] ?></textarea>
+                </div>
+
+                 <div class="form-group">
+                    <label>Detail Alamat</label>
+                    <textarea name="detail_alamat"><?= $pelanggan['detail_alamat'] ?></textarea>
                 </div>
 
                 <div class="form-group">

@@ -49,8 +49,8 @@ $rekap = ambilDataDashboard($koneksi);
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-   background: #414177ff;
+    font-family: 'Poppins', sans-serif;
+  background: #414177ff;
 }
 
 .container {
@@ -151,7 +151,7 @@ body {
 }
 
 .table thead {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
 }
 
 .table thead th {

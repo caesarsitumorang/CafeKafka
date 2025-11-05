@@ -1,3 +1,56 @@
+<?php
+require_once("config/koneksi.php");
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST['submit']) && $_POST['submit'] == 'Daftar') {
+        $username = trim($_POST['username']);
+        $password = $_POST['password'];
+        $nama_lengkap = trim($_POST['nama_lengkap']);
+        $latitude = trim($_POST['latitude']);
+        $longitude = trim($_POST['longitude']);
+
+        if (empty($username) || empty($password) || empty($nama_lengkap) || empty($latitude) || empty($longitude)) {
+            echo "<script>alert('Semua field wajib diisi, termasuk lokasi!'); window.location='register.php';</script>";
+            exit;
+        }
+
+        // Cek apakah username sudah digunakan
+        $check = mysqli_query($koneksi, "SELECT * FROM users WHERE username='$username'");
+        if (mysqli_num_rows($check) > 0) {
+            echo "<script>alert('Username sudah terdaftar!'); window.location='register.php';</script>";
+            exit;
+        }
+
+        // Hash password
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+        // Insert ke tabel users
+        $insertUser = mysqli_query($koneksi, "
+            INSERT INTO users (username, password, role) 
+            VALUES ('$username', '$hashedPassword', 'pelanggan')
+        ");
+
+        if ($insertUser) {
+            // Insert ke tabel pelanggan (kolom lain bisa NULL)
+            $insertPelanggan = mysqli_query($koneksi, "
+                INSERT INTO pelanggan (username, password, nama_lengkap, latitude, longitude) 
+                VALUES ('$username', '$hashedPassword', '$nama_lengkap', '$latitude', '$longitude')
+            ");
+
+            if ($insertPelanggan) {
+                echo "<script>alert('Registrasi berhasil! Silakan login.'); window.location='login.php';</script>";
+                exit;
+            } else {
+                echo "<script>alert('Gagal menyimpan data ke tabel pelanggan!'); window.location='register.php';</script>";
+                exit;
+            }
+        } else {
+            echo "<script>alert('Gagal menyimpan data ke tabel users!'); window.location='register.php';</script>";
+            exit;
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -119,6 +172,29 @@
         .form-links a:hover {
             text-decoration: underline;
         }
+
+        .location-btn {
+            background: #00b894;
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .location-btn:hover {
+            background: #009874;
+        }
+
+        .loc-display {
+            text-align: center;
+            color: #555;
+            font-size: 13px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -151,6 +227,15 @@
                     <input type="text" name="nama_lengkap" class="form-input" placeholder="Nama Lengkap" required>
                 </div>
 
+                <!-- Tombol ambil lokasi -->
+                <button type="button" class="location-btn" onclick="getLocation()">📍 Ambil Lokasi Saya</button>
+
+                <!-- Field tersembunyi -->
+                <input type="hidden" name="latitude" id="latitude">
+                <input type="hidden" name="longitude" id="longitude">
+
+                <div class="loc-display" id="locationInfo">Belum mengambil lokasi</div>
+
                 <button type="submit" name="submit" value="Daftar" class="login-btn" id="registerBtn">
                     <i class="fas fa-user-plus" style="margin-right: 0.5rem;"></i>
                     Daftar Sekarang
@@ -169,58 +254,25 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        document.getElementById('latitude').value = pos.coords.latitude;
+                        document.getElementById('longitude').value = pos.coords.longitude;
+                        document.getElementById('locationInfo').innerText =
+                            `Lokasi: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+                    },
+                    () => {
+                        alert("Gagal mengambil lokasi. Pastikan izin lokasi aktif.");
+                    }
+                );
+            } else {
+                alert("Browser tidak mendukung geolokasi.");
+            }
+        }
+    </script>
 </body>
 </html>
-
-<?php
-require_once("config/koneksi.php");
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    if (isset($_POST['submit']) && $_POST['submit'] == 'Daftar') {
-        $username = trim($_POST['username']);
-        $password = $_POST['password'];
-        $nama_lengkap = trim($_POST['nama_lengkap']);
-
-        if (empty($username) || empty($password) || empty($nama_lengkap)) {
-            echo "<script>alert('Semua field wajib diisi!'); window.location='register.php';</script>";
-            exit;
-        }
-
-        // Cek apakah username sudah digunakan
-        $check = mysqli_query($koneksi, "SELECT * FROM users WHERE username='$username'");
-        if (mysqli_num_rows($check) > 0) {
-            echo "<script>alert('Username sudah terdaftar!'); window.location='register.php';</script>";
-            exit;
-        }
-
-        // Hash password untuk keamanan
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-        // Insert ke tabel users (role default = pelanggan)
-        $insertUser = mysqli_query($koneksi, "
-            INSERT INTO users (username, password, role) 
-            VALUES ('$username', '$hashedPassword', 'pelanggan')
-        ");
-
-        if ($insertUser) {
-            // Insert juga ke tabel pelanggan (hanya username, password, nama lengkap)
-            $insertPelanggan = mysqli_query($koneksi, "
-                INSERT INTO pelanggan (username, password, nama_lengkap) 
-                VALUES ('$username', '$hashedPassword', '$nama_lengkap')
-            ");
-
-            if ($insertPelanggan) {
-                echo "<script>alert('Registrasi berhasil! Silakan login.'); window.location='login.php';</script>";
-                exit;
-            } else {
-                echo "<script>alert('Gagal menyimpan data ke tabel pelanggan!'); window.location='register.php';</script>";
-                exit;
-            }
-        } else {
-            echo "<script>alert('Gagal menyimpan data ke tabel users!'); window.location='register.php';</script>";
-            exit;
-        }
-    }
-}
-?>
-

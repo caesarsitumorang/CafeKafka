@@ -40,7 +40,6 @@ if (!$id_user) {
     exit;
 }
 
-// 🎯 Ambil id_pelanggan berdasarkan username
 $user_query = mysqli_query($koneksi, "
     SELECT p.id_pelanggan 
     FROM users u
@@ -56,7 +55,6 @@ if (!$id_pelanggan) {
     exit;
 }
 
-// 🗑️ Proses hapus item keranjang
 if (isset($_GET['hapus'])) {
     $id_keranjang = intval($_GET['hapus']);
     mysqli_query($koneksi, "DELETE FROM keranjang WHERE id=$id_keranjang AND id_pelanggan=$id_pelanggan");
@@ -89,7 +87,6 @@ if (isset($_POST['update_jumlah'])) {
 $success_message = "";
 $error_message = "";
 
-// 🚫 Batasi checkout jika cafe tidak buka
 if (isset($_POST['checkout'])) {
     if ($status_cafe != "buka") {
         $error_message = "Cafe sedang $status_cafe. Pesanan hanya bisa dilakukan antara jam " . date("H:i", strtotime($jam_buka)) . " - " . date("H:i", strtotime($jam_closing));
@@ -100,7 +97,6 @@ if (isset($_POST['checkout'])) {
         $total_harga = 0;
         $stok_tidak_cukup = [];
 
-        // PENTING: Update quantity ke database dulu sebelum checkout
         if (isset($_POST['jumlah'])) {
             foreach($_POST['jumlah'] as $id_keranjang => $jml) {
                 $jml = intval($jml);
@@ -198,7 +194,6 @@ if (isset($_POST['checkout'])) {
                         $stmt->execute();
                         $id_pesanan = $stmt->insert_id;
 
-                        // Simpan detail pesanan (tanpa mengurangi stok)
                         foreach ($selected_items as $id_keranjang) {
                             $id_keranjang = intval($id_keranjang);
                             
@@ -236,7 +231,7 @@ if (isset($_POST['checkout'])) {
 
                         $success_message = "Pesanan berhasil dibuat! Total: Rp " . number_format($total_harga, 0, ',', '.') . " - <a href='index.php?page=pesanan/riwayat' class='text-decoration-none'>Lihat Riwayat Pesanan</a>";
                         echo "<script>
-                                alert('Pesanan berhasil dibuat! Total: Rp " . number_format($total_harga, 0, ',', '.') . "');
+                                alert('Pesanan berhasil dibuat! Total: Rp " . number_format($total_harga, 0, ',', '.') . " untuk detail pesanan silakan cek di halaman pesanan.');
                                 window.location='index.php?page=keranjang/keranjang';
                               </script>";
                         exit;

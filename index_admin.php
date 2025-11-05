@@ -551,7 +551,14 @@ require_once("config/koneksi.php");
         <div class="nav-item <?= $page == '' ? 'active' : '' ?>">
             <a class="nav-link" href="index_admin.php">
                 <i class="fas fa-tachometer-alt"></i>
-                <span>Pesanan</span>
+                <span>Pesanan Online</span>
+            </a>
+        </div>
+
+        <div class="nav-item <?= $page == 'pesanan/data_pesanan' ? 'active' : '' ?>">
+            <a class="nav-link" href="index_admin.php?page_admin=pesanan_langsung/pesanan_langsung">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Pesanan Langsung</span>
             </a>
         </div>
 
