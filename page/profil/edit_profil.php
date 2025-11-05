@@ -24,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $no_hp = $_POST['no_hp'];
     $alamat = $_POST['alamat'];
     $detail_alamat = $_POST['detail_alamat'];
+    $latitude = $_POST['latitude'] ?? $pelanggan['latitude'];
+    $longitude = $_POST['longitude'] ?? $pelanggan['longitude'];
     $password = $_POST['password'] ?? '';
     $foto = $pelanggan['foto'];
 
@@ -31,7 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $uploadDir = "upload/";
         $fileName = time() . "_" . basename($_FILES["foto"]["name"]);
         $targetFile = $uploadDir . $fileName;
-        if (move_uploaded_file($_FILES["foto"]["tmp_name"], $targetFile)) $foto = $fileName;
+        if (move_uploaded_file($_FILES["foto"]["tmp_name"], $targetFile)) {
+            $foto = $fileName;
+        }
     }
 
     $query_pelanggan = "UPDATE pelanggan SET 
@@ -42,6 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         no_hp='$no_hp',
         alamat='$alamat',
         detail_alamat='$detail_alamat',
+        latitude='$latitude',
+        longitude='$longitude',
         foto='$foto'
         WHERE id_pelanggan='$id_pelanggan'";
 
@@ -105,11 +111,6 @@ body {
 .profile-left h3 {
     margin: 5px 0;
 }
-.profile-left p {
-    font-size: 0.9rem;
-    color: #f2f2f2;
-    margin: 2px 0;
-}
 .profile-right {
     flex: 2 1 600px;
     padding: 40px;
@@ -168,6 +169,24 @@ textarea {
 .btn-submit:hover {
     background: #33336b;
 }
+#btnLokasi {
+    background: #33336b;
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+#btnLokasi:hover {
+    background: #555;
+}
+.lokasi-wrapper {
+    grid-column: 1 / span 2;
+    text-align: left;
+    margin-top: 15px;
+    color: black;
+}
 @media(max-width: 768px){
     .form-grid {
         grid-template-columns: 1fr;
@@ -176,13 +195,11 @@ textarea {
 </style>
 
 <div class="profile-container">
-    <!-- Left Section -->
     <div class="profile-left">
         <img src="<?= !empty($pelanggan['foto']) ? 'upload/'.$pelanggan['foto'] : 'assets/default.jpg' ?>" alt="Foto Profil">
         <h3><?= $pelanggan['nama_lengkap'] ?> </h3>
     </div>
 
-    <!-- Right Section -->
     <div class="profile-right">
         <h3>Edit Profil</h3>
         <form method="post" enctype="multipart/form-data">
@@ -195,7 +212,6 @@ textarea {
                     <label>Nama Lengkap</label>
                     <input type="text" name="nama_lengkap" value="<?= $pelanggan['nama_lengkap'] ?>" required>
                 </div>
-
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" name="email" value="<?= $pelanggan['email'] ?>" required>
@@ -204,7 +220,6 @@ textarea {
                     <label>No HP</label>
                     <input type="text" name="no_hp" value="<?= $pelanggan['no_hp'] ?>" required>
                 </div>
-
                 <div class="form-group">
                     <label>Jenis Kelamin</label>
                     <select name="jenis_kelamin" required>
@@ -217,11 +232,19 @@ textarea {
                     <label>Alamat</label>
                     <textarea name="alamat"><?= $pelanggan['alamat'] ?></textarea>
                 </div>
-
-                 <div class="form-group">
+                <div class="form-group">
                     <label>Detail Alamat</label>
                     <textarea name="detail_alamat"><?= $pelanggan['detail_alamat'] ?></textarea>
                 </div>
+
+                <div class="lokasi-wrapper">
+                    <p><strong>📍 Ingin ganti lokasi?</strong></p>
+                    <button type="button" id="btnLokasi">Ambil Lokasi Saat Ini</button>
+                </div>
+
+                <!-- Hidden inputs untuk kirim data lokasi -->
+                <input type="hidden" name="latitude" id="latitude" value="<?= $pelanggan['latitude'] ?>">
+                <input type="hidden" name="longitude" id="longitude" value="<?= $pelanggan['longitude'] ?>">
 
                 <div class="form-group">
                     <label>Foto Profil</label>
@@ -237,3 +260,22 @@ textarea {
         </form>
     </div>
 </div>
+
+<script>
+document.getElementById('btnLokasi').addEventListener('click', function() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                document.getElementById('latitude').value = position.coords.latitude;
+                document.getElementById('longitude').value = position.coords.longitude;
+                alert("Lokasi berhasil diperbarui!");
+            },
+            function(error) {
+                alert("Gagal mengambil lokasi. Pastikan izin lokasi aktif dan halaman diakses melalui HTTPS atau localhost.");
+            }
+        );
+    } else {
+        alert("Browser tidak mendukung geolocation.");
+    }
+});
+</script>

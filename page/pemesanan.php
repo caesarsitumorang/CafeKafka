@@ -63,12 +63,11 @@ if (isset($_POST['pesan'])) {
     if ($jumlah <= 0) {
         $error_message = "Jumlah pesanan tidak valid.";
     } elseif ($jumlah > $stok_tersedia) {
-        // Hanya untuk informasi, stok tidak dikurangi
-        $error_message = "Jumlah yang Anda pesan ($jumlah) melebihi stok yang tersedia ($stok_tersedia). Silakan sesuaikan jumlah pesanan.";
+        $error_message = "Jumlah yang Anda pesan ($jumlah) melebihi stok yang tersedia ($stok_tersedia).";
     } else {
         $total_harga = $current_item['harga'] * $jumlah;
 
-        // Upload bukti
+        // Upload bukti pembayaran
         $bukti = null;
         if (isset($_FILES['bukti']) && $_FILES['bukti']['error'] == 0) {
             $ext = pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION);
@@ -79,19 +78,28 @@ if (isset($_POST['pesan'])) {
         $id_makanan = ($tipe == "makanan") ? $current_item['id'] : null;
         $id_minuman = ($tipe == "minuman") ? $current_item['id'] : null;
 
-        // Insert ke tabel pesanan tanpa mengurangi stok
-        $stmt = $koneksi->prepare("INSERT INTO pesanan (id_pelanggan, id_makanan, id_minuman, total_harga, status, bukti_pembayaran, detail_alamat, latitude, longitude) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)");
-        $stmt->bind_param("iiiis", $id_pelanggan, $id_makanan, $id_minuman, $total_harga, $bukti);
-        
+        // Ambil lokasi pelanggan
+        $detail_alamat = $pelanggan['detail_alamat'];
+        $latitude = $pelanggan['latitude'];
+        $longitude = $pelanggan['longitude'];
+
+        // Insert ke tabel pesanan (dengan detail alamat, lat, long)
+        $stmt = $koneksi->prepare("INSERT INTO pesanan 
+            (id_pelanggan, id_makanan, id_minuman, total_harga, status, bukti_pembayaran, detail_alamat, latitude, longitude) 
+            VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)");
+        $stmt->bind_param("iiiissdd", 
+            $id_pelanggan, $id_makanan, $id_minuman, $total_harga, $bukti, 
+            $detail_alamat, $latitude, $longitude
+        );
+
         if ($stmt->execute()) {
             $id_pesanan = $koneksi->insert_id;
 
-            // Insert ke pesanan_detail
             $stmt_detail = $koneksi->prepare("INSERT INTO pesanan_detail (id_pesanan, id_makanan, id_minuman, jumlah) VALUES (?, ?, ?, ?)");
             $stmt_detail->bind_param("iiii", $id_pesanan, $id_makanan, $id_minuman, $jumlah);
             
             if ($stmt_detail->execute()) {
-                $success_message = "Pesanan berhasil dibuat! Silakan tunggu konfirmasi dari kami di halaman pesanan.";
+                $success_message = "Pesanan berhasil dibuat! Silakan tunggu konfirmasi di halaman pesanan.";
             } else {
                 $error_message = "Gagal menyimpan detail pesanan.";
             }
@@ -101,7 +109,6 @@ if (isset($_POST['pesan'])) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -761,7 +768,18 @@ body {
                             Rp <?= number_format($item['harga'], 0, ',', '.') ?>
                         </div>
                     </div>
-                    
+
+                    <!-- Lokasi -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Apakah lokasi sudah sesuai?
+                        </label>
+                        <a href="index.php?page=profil/edit_profil" class="btn-custom btn-secondary" style="background:#33336b;color:white;">
+                            Sesuaikan Lokasi
+                        </a>
+                    </div>
+
                     <div class="form-group">
                         <label for="bukti" class="form-label">
                             <i class="fas fa-receipt"></i>
@@ -799,7 +817,6 @@ body {
                 </div>
             </form>
             <?php else: ?>
-            <!-- Stok Habis -->
             <div class="alert-error">
                 <i class="fas fa-times-circle"></i>
                 Maaf, stok untuk item ini sudah habis. Silakan pilih menu lainnya.

@@ -634,7 +634,8 @@ function updateStock($koneksi, $id_pesanan) {
 // Get order data
 $queryPesanan = "
     SELECT p.id, p.id_pelanggan, pl.nama_lengkap, p.total_harga, p.status, 
-           p.bukti_pembayaran, p.catatan, p.created_at
+           p.bukti_pembayaran, p.catatan, p.created_at,
+           p.latitude AS pesanan_latitude, p.longitude AS pesanan_longitude
     FROM pesanan p
     LEFT JOIN pelanggan pl ON p.id_pelanggan = pl.id_pelanggan
     WHERE p.id = ?
@@ -648,6 +649,40 @@ $data = $result->fetch_assoc();
 if(!$data){
     echo "Pesanan tidak ditemukan.";
     exit;
+}
+
+// --- NEW: fetch admin coordinates (assumes table `admin` with columns latitude, longitude) ---
+$admin_lat = null;
+$admin_lng = null;
+$adminQuery = $koneksi->prepare("SELECT latitude, longitude FROM admin LIMIT 1");
+if ($adminQuery) {
+    $adminQuery->execute();
+    $adminRes = $adminQuery->get_result();
+    if ($adminRow = $adminRes->fetch_assoc()) {
+        $admin_lat = $adminRow['latitude'];
+        $admin_lng = $adminRow['longitude'];
+    }
+    $adminQuery->close();
+}
+
+// --- NEW: Haversine distance function (returns km) ---
+function haversineDistance($lat1, $lon1, $lat2, $lon2) {
+    if ($lat1 === null || $lon1 === null || $lat2 === null || $lon2 === null) return null;
+    $earthRadius = 6371; // km
+    $dLat = deg2rad($lat2 - $lat1);
+    $dLon = deg2rad($lon2 - $lon1);
+    $a = sin($dLat/2) * sin($dLat/2) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon/2) * sin($dLon/2);
+    $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+    return $earthRadius * $c;
+}
+
+// Compute distance if coordinates available
+$order_lat = $data['pesanan_latitude'] ?? null;
+$order_lng = $data['pesanan_longitude'] ?? null;
+$distance_km = null;
+if ($admin_lat !== null && $admin_lng !== null && $order_lat !== null && $order_lng !== null) {
+    $distance = haversineDistance((float)$admin_lat, (float)$admin_lng, (float)$order_lat, (float)$order_lng);
+    $distance_km = $distance !== null ? round($distance, 2) : null;
 }
 
 // Get order details
@@ -673,11 +708,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
     $newStatus = $_POST['status'];
     $currentStatus = $data['status'];
     
-    // Define allowed status transitions
+    // Define allowed status transitions (updated to include 'dikirim')
     $allowedTransitions = [
         'pending' => ['diterima', 'ditolak'],
         'diterima' => ['diproses'],
-        'diproses' => ['selesai'],
+        'diproses' => ['dikirim'],   // changed: diproses -> dikirim
+        'dikirim' => ['selesai'],    // new
         'selesai' => [],
         'ditolak' => []
     ];
@@ -739,10 +775,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
 // Get next allowed status
 $nextStatus = '';
 $statusInfo = '';
+
+// Keep transition map in sync for UI next-status calculation
 $allowedTransitions = [
     'pending' => ['diterima'],
     'diterima' => ['diproses'],
-    'diproses' => ['selesai'],
+    'diproses' => ['dikirim'],   // changed
+    'dikirim' => ['selesai'],    // added
     'selesai' => [],
     'ditolak' => []
 ];
@@ -760,7 +799,10 @@ switch($data['status']) {
         $statusInfo = 'Pesanan telah diterima. Selanjutnya: Diproses';
         break;
     case 'diproses':
-        $statusInfo = 'Pesanan sedang diproses. Selanjutnya: Selesai';
+        $statusInfo = 'Pesanan sedang diproses. Selanjutnya: Dikirim';
+        break;
+    case 'dikirim':
+        $statusInfo = 'Pesanan sedang dalam pengiriman. Anda dapat melihat rute pengiriman atau ubah status menjadi Selesai setelah tiba.';
         break;
     case 'selesai':
         $statusInfo = 'Pesanan telah selesai. Tidak ada perubahan status selanjutnya.';
@@ -941,6 +983,36 @@ switch($data['status']) {
                         Tolak Pesanan
                     </button>
                 </div>
+
+            <?php elseif ($data['status'] === 'dikirim'): ?>
+                <!-- When status is 'dikirim' show route button (opens Google Maps) and next-status button -->
+                <div class="button-container" style="align-items:center;">
+                    <?php if ($admin_lat !== null && $admin_lng !== null && $order_lat !== null && $order_lng !== null): 
+                        $mapsUrl = "https://www.google.com/maps/dir/?api=1&origin=".urlencode($admin_lat.','.$admin_lng)."&destination=".urlencode($order_lat.','.$order_lng)."&travelmode=driving";
+                    ?>
+                        <a href="<?= htmlspecialchars($mapsUrl) ?>" target="_blank" class="back-btn" style="display:inline-flex; align-items:center; gap:8px;">
+                            <i class="fas fa-map-marked-alt"></i>
+                            Lihat Rute
+                        </a>
+                        <?php if ($distance_km !== null): ?>
+                            <div style="font-weight:600; padding:8px 12px; border-radius:8px; background:#eff6ff; color:#1e40af; margin-left:10px;">
+                                Jarak: <?= $distance_km ?> km
+                            </div>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <div class="alert alert-warning" style="margin:0;">
+                            <i class="fas fa-exclamation-triangle"></i> Koordinat admin atau lokasi pesanan tidak tersedia.
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($nextStatus): ?>
+                        <button type="submit" name="status" value="<?= $nextStatus ?>" class="save-btn" onclick="return confirm('Apakah Anda yakin ingin mengubah status pesanan ke <?= ucfirst($nextStatus) ?>?')">
+                            <i class="fas fa-arrow-right"></i>
+                            Ubah ke <?= ucfirst($nextStatus) ?>
+                        </button>
+                    <?php endif; ?>
+                </div>
+
             <?php elseif ($nextStatus): ?>
                 <!-- Regular status progression -->
                 <button type="submit" name="status" value="<?= $nextStatus ?>" class="save-btn" onclick="return confirm('Apakah Anda yakin ingin mengubah status pesanan ke <?= ucfirst($nextStatus) ?>?')">

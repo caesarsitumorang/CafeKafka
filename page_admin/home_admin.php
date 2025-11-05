@@ -394,7 +394,7 @@ html, body {
                         LEFT JOIN pesanan_detail pd ON p.id = pd.id_pesanan
                         LEFT JOIN makanan m ON pd.id_makanan = m.id
                         LEFT JOIN minuman mn ON pd.id_minuman = mn.id
-                        WHERE p.status IN ('pending','diterima','diproses')
+                        WHERE p.status IN ('pending','diterima','diproses','dikirim')
                         GROUP BY p.id, pl.nama_lengkap
                         ORDER BY p.id DESC
                     ";

@@ -2,8 +2,10 @@
 if (session_status() == PHP_SESSION_NONE) session_start();
 include "config/koneksi.php";
 
-// 🔎 Ambil jam buka/tutup
+// Zona waktu
 date_default_timezone_set("Asia/Jakarta");
+
+// Ambil jam operasional cafe
 $qCafe = mysqli_query($koneksi, "SELECT jam_buka, jam_closing, bank, no_rek, pemilik FROM data_cafe LIMIT 1");
 $dataCafe = mysqli_fetch_assoc($qCafe);
 $jam_buka    = $dataCafe['jam_buka'] ?? "08:00:00";
@@ -12,9 +14,6 @@ $dataPembayaran = $dataCafe;
 
 // Tentukan status cafe
 $waktu_sekarang = date("H:i:s");
-$status_cafe = "";
-
-// Jika jam tutup < jam buka → operasional lintas hari
 if ($jam_closing < $jam_buka) {
     if ($waktu_sekarang >= $jam_buka || $waktu_sekarang <= $jam_closing) {
         $status_cafe = "buka";
@@ -33,20 +32,20 @@ if ($jam_closing < $jam_buka) {
     }
 }
 
-// 🔒 Cek login
+// Cek login
 $id_user = $_SESSION['id_user'] ?? null;
 if (!$id_user) {
     echo "<script>alert('Silakan login terlebih dahulu.'); window.location='login.php';</script>";
     exit;
 }
 
+// Ambil data pelanggan
 $user_query = mysqli_query($koneksi, "
-    SELECT p.id_pelanggan 
+    SELECT p.id_pelanggan, p.detail_alamat, p.latitude, p.longitude
     FROM users u
     JOIN pelanggan p ON p.username = u.username
     WHERE u.id_user = '$id_user'
 ");
-
 $user_data = mysqli_fetch_assoc($user_query);
 $id_pelanggan = $user_data['id_pelanggan'] ?? null;
 
@@ -55,6 +54,10 @@ if (!$id_pelanggan) {
     exit;
 }
 
+// Cek apakah lokasi pelanggan sudah lengkap
+$lokasi_lengkap = !empty($user_data['detail_alamat']) && !empty($user_data['latitude']) && !empty($user_data['longitude']);
+
+// Hapus item
 if (isset($_GET['hapus'])) {
     $id_keranjang = intval($_GET['hapus']);
     mysqli_query($koneksi, "DELETE FROM keranjang WHERE id=$id_keranjang AND id_pelanggan=$id_pelanggan");
@@ -62,17 +65,7 @@ if (isset($_GET['hapus'])) {
     exit;
 }
 
-// 🗑️ Proses hapus multiple items
-if (isset($_GET['hapus']) && is_array($_GET['hapus'])) {
-    foreach($_GET['hapus'] as $id_keranjang) {
-        $id_keranjang = intval($id_keranjang);
-        mysqli_query($koneksi, "DELETE FROM keranjang WHERE id=$id_keranjang AND id_pelanggan=$id_pelanggan");
-    }
-    header("Location: index.php?page=keranjang/keranjang");
-    exit;
-}
-
-// 🔄 Proses update jumlah
+// Update jumlah item
 if (isset($_POST['update_jumlah'])) {
     foreach($_POST['jumlah'] as $id_keranjang => $jml) {
         $jml = intval($jml);
@@ -87,8 +80,11 @@ if (isset($_POST['update_jumlah'])) {
 $success_message = "";
 $error_message = "";
 
+// Proses checkout
 if (isset($_POST['checkout'])) {
-    if ($status_cafe != "buka") {
+    if (!$lokasi_lengkap) {
+        $error_message = "Lengkapi lokasi Anda terlebih dahulu di halaman profil sebelum melakukan pemesanan.";
+    } elseif ($status_cafe != "buka") {
         $error_message = "Cafe sedang $status_cafe. Pesanan hanya bisa dilakukan antara jam " . date("H:i", strtotime($jam_buka)) . " - " . date("H:i", strtotime($jam_closing));
     } elseif (!isset($_POST['selected_items']) || empty($_POST['selected_items'])) {
         $error_message = "Pilih minimal satu item untuk checkout!";
@@ -97,152 +93,97 @@ if (isset($_POST['checkout'])) {
         $total_harga = 0;
         $stok_tidak_cukup = [];
 
-        if (isset($_POST['jumlah'])) {
-            foreach($_POST['jumlah'] as $id_keranjang => $jml) {
-                $jml = intval($jml);
-                $id_keranjang = intval($id_keranjang);
-                if ($jml > 0) {
-                    mysqli_query($koneksi, "UPDATE keranjang SET jumlah=$jml WHERE id=$id_keranjang AND id_pelanggan=$id_pelanggan");
-                }
-            }
+        // Update jumlah terbaru
+        foreach($_POST['jumlah'] as $id_keranjang => $jml) {
+            $jml = intval($jml);
+            mysqli_query($koneksi, "UPDATE keranjang SET jumlah=$jml WHERE id=$id_keranjang AND id_pelanggan=$id_pelanggan");
         }
 
-        // 📦 Cek stok untuk setiap item yang dipilih
+        // Cek stok
         foreach ($selected_items as $id_keranjang) {
             $id_keranjang = intval($id_keranjang);
-            
             $item_query = mysqli_query($koneksi, "
                 SELECT 
-                    k.id,
-                    k.id_makanan, 
-                    k.id_minuman, 
-                    k.jumlah,
-                    m.nama AS nama_makanan,
-                    m.harga AS harga_makanan, 
-                    m.stok AS stok_makanan,
-                    n.nama AS nama_minuman,
-                    n.harga AS harga_minuman,
-                    n.stok AS stok_minuman
+                    k.id, k.id_makanan, k.id_minuman, k.jumlah,
+                    m.nama AS nama_makanan, m.stok AS stok_makanan,
+                    n.nama AS nama_minuman, n.stok AS stok_minuman
                 FROM keranjang k
                 LEFT JOIN makanan m ON k.id_makanan = m.id
                 LEFT JOIN minuman n ON k.id_minuman = n.id
                 WHERE k.id = $id_keranjang AND k.id_pelanggan = $id_pelanggan
             ");
-            
-            if ($item_data = mysqli_fetch_assoc($item_query)) {
-                $nama_item = $item_data['id_makanan'] ? $item_data['nama_makanan'] : $item_data['nama_minuman'];
-                $stok_tersedia = $item_data['id_makanan'] ? $item_data['stok_makanan'] : $item_data['stok_minuman'];
-                $jumlah_dipesan = $item_data['jumlah'];
-                
-                // Cek apakah stok mencukupi
-                if ($stok_tersedia < $jumlah_dipesan) {
-                    $stok_tidak_cukup[] = [
-                        'nama' => $nama_item,
-                        'stok_tersedia' => $stok_tersedia,
-                        'jumlah_dipesan' => $jumlah_dipesan
-                    ];
+            if ($item = mysqli_fetch_assoc($item_query)) {
+                $stok_tersedia = $item['id_makanan'] ? $item['stok_makanan'] : $item['stok_minuman'];
+                if ($stok_tersedia < $item['jumlah']) {
+                    $stok_tidak_cukup[] = $item['nama_makanan'] ?? $item['nama_minuman'];
                 }
             }
         }
 
-        // Jika ada stok yang tidak mencukupi, tampilkan pesan error
         if (!empty($stok_tidak_cukup)) {
-            $error_message = "Pesanan tidak dapat diproses karena stok tidak mencukupi:<br>";
-            foreach ($stok_tidak_cukup as $item) {
-                $error_message .= "- " . $item['nama'] . " (Dipesan: " . $item['jumlah_dipesan'] . ", Tersedia: " . $item['stok_tersedia'] . ")<br>";
-            }
-            $error_message .= "Silakan kurangi jumlah pesanan atau hapus item yang stoknya tidak mencukupi.";
+            $error_message = "Pesanan gagal. Stok tidak mencukupi untuk: " . implode(", ", $stok_tidak_cukup);
         } else {
-            // 💰 Hitung total harga berdasarkan item yang dipilih dengan quantity terbaru dari database
+            // Hitung total
             foreach ($selected_items as $id_keranjang) {
                 $id_keranjang = intval($id_keranjang);
-                
-                $item_query = mysqli_query($koneksi, "
-                    SELECT 
-                        k.id,
-                        k.id_makanan, 
-                        k.id_minuman, 
-                        k.jumlah,
-                        m.harga AS harga_makanan, 
-                        n.harga AS harga_minuman
+                $res = mysqli_query($koneksi, "
+                    SELECT k.jumlah, m.harga AS harga_makanan, n.harga AS harga_minuman
                     FROM keranjang k
                     LEFT JOIN makanan m ON k.id_makanan = m.id
                     LEFT JOIN minuman n ON k.id_minuman = n.id
-                    WHERE k.id = $id_keranjang AND k.id_pelanggan = $id_pelanggan
+                    WHERE k.id = $id_keranjang
                 ");
-                
-                if ($item_data = mysqli_fetch_assoc($item_query)) {
-                    $harga = $item_data['id_makanan'] ? $item_data['harga_makanan'] : $item_data['harga_minuman'];
-                    $subtotal = $item_data['jumlah'] * $harga;
-                    $total_harga += $subtotal;
+                if ($row = mysqli_fetch_assoc($res)) {
+                    $harga = $row['harga_makanan'] ?? $row['harga_minuman'];
+                    $total_harga += $harga * $row['jumlah'];
                 }
             }
 
-            // 📂 Upload bukti pembayaran
-            $bukti = null;
+            // Upload bukti pembayaran
             if (isset($_FILES['bukti']) && $_FILES['bukti']['error'] == 0) {
-                $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
                 $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
+                $allowed = ['jpg','jpeg','png'];
+                if (in_array($ext, $allowed)) {
+                    $bukti = "upload/bukti_" . time() . ".$ext";
+                    if (!file_exists('upload')) mkdir('upload');
+                    move_uploaded_file($_FILES['bukti']['tmp_name'], $bukti);
 
-                if (in_array($ext, $allowed_types)) {
-                    $bukti = "upload/bukti_" . time() . "_" . $id_pelanggan . "." . $ext;
-                    if (!file_exists('upload')) mkdir('upload', 0755, true);
+                    // Simpan pesanan dengan data lokasi pelanggan
+                    $stmt = $koneksi->prepare("
+                        INSERT INTO pesanan (id_pelanggan, total_harga, status, bukti_pembayaran, detail_alamat, latitude, longitude, created_at)
+                        VALUES (?, ?, 'pending', ?, ?, ?, ?, NOW())
+                    ");
+                    $stmt->bind_param(
+                        "idssss",
+                        $id_pelanggan,
+                        $total_harga,
+                        $bukti,
+                        $user_data['detail_alamat'],
+                        $user_data['latitude'],
+                        $user_data['longitude']
+                    );
+                    $stmt->execute();
+                    $id_pesanan = $stmt->insert_id;
 
-                    if (move_uploaded_file($_FILES['bukti']['tmp_name'], $bukti)) {
-                        $stmt = $koneksi->prepare("INSERT INTO pesanan (id_pelanggan, total_harga, status, bukti_pembayaran, created_at) VALUES (?, ?, 'pending', ?, NOW())");
-                        $stmt->bind_param("ids", $id_pelanggan, $total_harga, $bukti);
-                        $stmt->execute();
-                        $id_pesanan = $stmt->insert_id;
-
-                        foreach ($selected_items as $id_keranjang) {
-                            $id_keranjang = intval($id_keranjang);
-                            
-                            $item_query = mysqli_query($koneksi, "
-                                SELECT 
-                                    k.id_makanan, 
-                                    k.id_minuman, 
-                                    k.jumlah
-                                FROM keranjang k
-                                WHERE k.id = $id_keranjang AND k.id_pelanggan = $id_pelanggan
-                            ");
-                            
-                            if ($item_data = mysqli_fetch_assoc($item_query)) {
-                                // Insert ke pesanan_detail
-                                $stmt_detail = $koneksi->prepare("
-                                    INSERT INTO pesanan_detail (id_pesanan, id_makanan, id_minuman, jumlah) 
-                                    VALUES (?, ?, ?, ?)
-                                ");
-                                $stmt_detail->bind_param(
-                                    "iiii", 
-                                    $id_pesanan, 
-                                    $item_data['id_makanan'], 
-                                    $item_data['id_minuman'], 
-                                    $item_data['jumlah']
-                                );
-                                $stmt_detail->execute();
-                            }
-                        }
-
-                        // Hapus item dari keranjang
-                        foreach ($selected_items as $id_keranjang) {
-                            $id_keranjang = intval($id_keranjang);
-                            mysqli_query($koneksi, "DELETE FROM keranjang WHERE id = $id_keranjang AND id_pelanggan = $id_pelanggan");
-                        }
-
-                        $success_message = "Pesanan berhasil dibuat! Total: Rp " . number_format($total_harga, 0, ',', '.') . " - <a href='index.php?page=pesanan/riwayat' class='text-decoration-none'>Lihat Riwayat Pesanan</a>";
-                        echo "<script>
-                                alert('Pesanan berhasil dibuat! Total: Rp " . number_format($total_harga, 0, ',', '.') . " untuk detail pesanan silakan cek di halaman pesanan.');
-                                window.location='index.php?page=keranjang/keranjang';
-                              </script>";
-                        exit;
-                    } else {
-                        $error_message = "Gagal mengupload bukti pembayaran!";
+                    // Simpan detail pesanan
+                    foreach ($selected_items as $id_keranjang) {
+                        $id_keranjang = intval($id_keranjang);
+                        mysqli_query($koneksi, "
+                            INSERT INTO pesanan_detail (id_pesanan, id_makanan, id_minuman, jumlah)
+                            SELECT $id_pesanan, id_makanan, id_minuman, jumlah FROM keranjang WHERE id=$id_keranjang
+                        ");
                     }
+
+                    // Hapus keranjang
+                    mysqli_query($koneksi, "DELETE FROM keranjang WHERE id_pelanggan=$id_pelanggan");
+
+                    echo "<script>alert('Pesanan berhasil dibuat!, cek pesanan di menu pesanan'); window.location='index.php?page=pesanan/pesanan';</script>";
+                    exit;
                 } else {
-                    $error_message = "Format file tidak didukung! Gunakan JPG, JPEG, PNG, atau GIF.";
+                    $error_message = "Format file tidak didukung!";
                 }
             } else {
-                $error_message = "Bukti pembayaran wajib diupload!";
+                $error_message = "Upload bukti pembayaran wajib!";
             }
         }
     }
@@ -251,21 +192,17 @@ if (isset($_POST['checkout'])) {
 // Ambil data keranjang
 $keranjang = mysqli_query($koneksi, "
     SELECT 
-        k.id,
-        k.id_makanan, 
-        k.id_minuman, 
-        k.jumlah, 
+        k.id, k.id_makanan, k.id_minuman, k.jumlah, 
         m.nama AS nama_makanan, m.harga AS harga_makanan, m.gambar AS gambar_makanan,
         n.nama AS nama_minuman, n.harga AS harga_minuman, n.gambar AS gambar_minuman
     FROM keranjang k
     LEFT JOIN makanan m ON k.id_makanan = m.id
     LEFT JOIN minuman n ON k.id_minuman = n.id
     WHERE k.id_pelanggan = $id_pelanggan
-    ORDER BY k.id DESC
 ");
 $total_items = mysqli_num_rows($keranjang);
-
 ?>
+
 
 
 <!DOCTYPE html>
@@ -749,12 +686,6 @@ $total_items = mysqli_num_rows($keranjang);
                                 <button type="submit" name="update_jumlah" class="btn btn-warning-custom btn-custom">
                                     <i class="fas fa-sync-alt me-2"></i>Update Keranjang
                                 </button>
-                                <!-- <div>
-                                    <span class="text-muted me-3">Total Items: <span id="selectedItemCount">0</span></span>
-                                    <button type="button" class="btn btn-danger-custom btn-custom" onclick="clearSelected()">
-                                        <i class="fas fa-trash-alt me-2"></i>Hapus Terpilih
-                                    </button>
-                                </div> -->
                             </div>
                         </div>
                     </form>
@@ -815,6 +746,9 @@ $total_items = mysqli_num_rows($keranjang);
                                     Format: JPG, JPEG, PNG, GIF (Max: 5MB)
                                 </small>
                                 <div id="imagePreview"></div>
+                                 <label for="bukti" class="form-label fw-semibold">
+                                    <i class="fas fa-upload me-2"></i>Silahkan cek lokasi dulu dihalaman edit profil sebelum pesan 
+                                </label>
                             </div>
 
                             <!-- Hidden inputs for selected items -->

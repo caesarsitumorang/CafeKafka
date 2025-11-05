@@ -583,10 +583,17 @@ require_once("config/koneksi.php");
             </a>
         </div>
 
-        <div class="nav-item <?= $page == 'pengembalian/pengembalian' ? 'active' : '' ?>">
+        <div class="nav-item <?= $page == 'pelanggan/pelanggan' ? 'active' : '' ?>">
             <a class="nav-link" href="index_admin.php?page_admin=pelanggan/data_pelanggan">
                 <i class="fas fa-users"></i>
                 <span>Data Pelanggan</span>
+            </a>
+        </div>
+
+         <div class="nav-item <?= $page == 'admin/admin' ? 'active' : '' ?>">
+            <a class="nav-link" href="index_admin.php?page_admin=admin/data_admin">
+                <i class="fas fa-users"></i>
+                <span>Data Admin</span>
             </a>
         </div>
 
