@@ -1,8 +1,8 @@
 <?php
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "cafe_kafka";
+$host = "103.163.138.81";
+$user = "wacanawe_root";
+$pass = "Cv011224!.";
+$db   = "wacanawe_cafe-kafka";
 
 $koneksi = mysqli_connect($host, $user, $pass, $db);
 

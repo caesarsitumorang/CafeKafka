@@ -70,10 +70,20 @@ if (isset($_POST['pesan'])) {
         // Upload bukti pembayaran
         $bukti = null;
         if (isset($_FILES['bukti']) && $_FILES['bukti']['error'] == 0) {
-            $ext = pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION);
-            $bukti = "upload/bukti_" . time() . "." . $ext;
-            move_uploaded_file($_FILES['bukti']['tmp_name'], $bukti);
+            $uploadDir = "upload/";
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true); // Buat folder kalau belum ada
+            }
+
+            $ext = strtolower(pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION));
+            $fileName = "bukti_" . time() . "." . $ext;
+            $bukti = $uploadDir . $fileName;
+
+            if (!move_uploaded_file($_FILES['bukti']['tmp_name'], $bukti)) {
+                $error_message = "Gagal mengupload bukti pembayaran.";
+            }
         }
+
 
         $id_makanan = ($tipe == "makanan") ? $current_item['id'] : null;
         $id_minuman = ($tipe == "minuman") ? $current_item['id'] : null;
@@ -109,6 +119,7 @@ if (isset($_POST['pesan'])) {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>

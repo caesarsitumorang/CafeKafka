@@ -865,31 +865,34 @@ switch($data['status']) {
         </div>
 
         <div class="info-card">
-            <div class="label">
-                <i class="fas fa-receipt"></i>
-                Bukti Pembayaran
-            </div>
-            <div class="value">
-                <?php if (!empty($data['bukti_pembayaran'])): ?>
-                    <?php 
-                        $file = htmlspecialchars($data['bukti_pembayaran']); 
-                        $file = str_replace("upload/", "", $file);
-                        $path = "upload/" . $file; 
-                        $fullPath = __DIR__ . "upload/" . $file;
-                    ?>
-                    <?php if (file_exists($fullPath)): ?>
-                        <img src="<?= $path ?>" 
-                            alt="Bukti Pembayaran" 
-                            class="payment-image"
-                            onclick="openImageOverlay(this.src)">
-                    <?php else: ?>
-                        <span style="color: red; font-style: italic;">File tidak ditemukan</span>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <span style="color: #a0aec0; font-style: italic;">-</span>
-                <?php endif; ?>
-            </div>
-        </div>
+    <div class="label">
+        <i class="fas fa-receipt"></i>
+        Bukti Pembayaran
+    </div>
+    <div class="value">
+        <?php if (!empty($data['bukti_pembayaran'])): ?>
+            <?php 
+                // Pastikan path tetap di folder upload/
+                $file = basename($data['bukti_pembayaran']); // hanya ambil nama file
+                $path = "upload/" . $file; 
+                $fullPath = __DIR__ . "/../upload/" . $file; // sesuaikan path fisik
+
+                // Jika file tidak ditemukan, tampilkan pesan error
+            ?>
+            <?php if (file_exists($fullPath)): ?>
+                <img src="<?= htmlspecialchars($path) ?>" 
+                     alt="Bukti Pembayaran" 
+                     class="payment-image"
+                     onclick="openImageOverlay(this.src)">
+            <?php else: ?>
+                <span style="color: red; font-style: italic;">File tidak ditemukan</span>
+            <?php endif; ?>
+        <?php else: ?>
+            <span style="color: #a0aec0; font-style: italic;">-</span>
+        <?php endif; ?>
+    </div>
+</div>
+
 
         <?php if($data['catatan']): ?>
         <div class="info-card" style="grid-column: 1 / -1;">
