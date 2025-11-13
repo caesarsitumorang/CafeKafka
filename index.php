@@ -1,12 +1,14 @@
 <?php
 ob_start();
 session_start();
-if (!$_SESSION['username']) {
-    header("location:index.html");
+
+// Cek login
+if (!isset($_SESSION['username'])) {
+    header("Location: login.php");
     exit();
 }
-require_once("config/koneksi.php");
 
+require_once("config/koneksi.php");
 
 // Routing halaman dengan aman
 $halaman = $_GET['page'] ?? '';
