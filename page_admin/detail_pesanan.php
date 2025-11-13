@@ -780,8 +780,8 @@ $statusInfo = '';
 $allowedTransitions = [
     'pending' => ['diterima'],
     'diterima' => ['diproses'],
-    'diproses' => ['dikirim'],   // changed
-    'dikirim' => ['selesai'],    // added
+    'diproses' => ['dikirim'],   
+    'dikirim' => ['selesai'],    
     'selesai' => [],
     'ditolak' => []
 ];
@@ -874,8 +874,8 @@ switch($data['status']) {
                     <?php 
                         $file = htmlspecialchars($data['bukti_pembayaran']); 
                         $file = str_replace("upload/", "", $file);
-                        $path = "../upload/" . $file; 
-                        $fullPath = __DIR__ . "/../upload/" . $file;
+                        $path = "upload/" . $file; 
+                        $fullPath = __DIR__ . "upload/" . $file;
                     ?>
                     <?php if (file_exists($fullPath)): ?>
                         <img src="<?= $path ?>" 

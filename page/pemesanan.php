@@ -678,7 +678,7 @@ body {
                     <?php 
                         $gambar = $item['gambar'] ?? ''; 
                         $gambar = str_replace("upload/", "", $gambar);
-                        $path = $gambar ? "../upload/" . $gambar : "assets/default.jpg";
+                        $path = $gambar ? "upload/" . $gambar : "assets/default.jpg";
                     ?>
                     <img src="<?= $path ?>" 
                          alt="<?= htmlspecialchars($item['nama']) ?>" 

@@ -50,6 +50,7 @@ $stats_query = "
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
         SUM(CASE WHEN status = 'diproses' THEN 1 ELSE 0 END) as diproses,
         SUM(CASE WHEN status = 'diterima' THEN 1 ELSE 0 END) as diterima,
+        SUM(CASE WHEN status = 'dikirim' THEN 1 ELSE 0 END) as dikirim,
         SUM(CASE WHEN status = 'ditolak' THEN 1 ELSE 0 END) as ditolak,
         SUM(CASE WHEN status = 'selesai' THEN 1 ELSE 0 END) as selesai
     FROM pesanan 
@@ -173,6 +174,7 @@ body {
 .stat-diterima .stat-number { color: var(--success-color); }
 .stat-ditolak .stat-number { color: var(--accent-color); }
 .stat-selesai .stat-number { color: var(--info-color); }
+.stat-dikirim .stat-number { color: #9b59b6; }
 
 .orders-container {
     background: var(--white);
@@ -290,6 +292,11 @@ body {
 
 .status-selesai {
     background: var(--info-color);
+    color: var(--white);
+}
+
+.status-dikirim {
+    background: #9b59b6; /* Purple color for 'dikirim' status */
     color: var(--white);
 }
 
@@ -624,23 +631,27 @@ body {
     <div class="stats-row">
          <div class="stat-card stat-diproses">
             <div class="stat-number"><?= $stats['pending'] ?></div>
-            <div class="stat-label">Dipending</div>
-        </div>
-        <div class="stat-card stat-diproses">
-            <div class="stat-number"><?= $stats['diproses'] ?></div>
-            <div class="stat-label">Diproses</div>
+            <div class="stat-label">Pending</div>
         </div>
         <div class="stat-card stat-diterima">
             <div class="stat-number"><?= $stats['diterima'] ?></div>
             <div class="stat-label">Diterima</div>
         </div>
-        <div class="stat-card stat-ditolak">
-            <div class="stat-number"><?= $stats['ditolak'] ?></div>
-            <div class="stat-label">Ditolak</div>
+        <div class="stat-card stat-diproses">
+            <div class="stat-number"><?= $stats['diproses'] ?></div>
+            <div class="stat-label">Diproses</div>
+        </div>
+        <div class="stat-card stat-dikirim">
+            <div class="stat-number"><?= $stats['dikirim'] ?></div>
+            <div class="stat-label">Dikirim</div>
         </div>
         <div class="stat-card stat-selesai">
             <div class="stat-number"><?= $stats['selesai'] ?></div>
             <div class="stat-label">Selesai</div>
+        </div>
+        <div class="stat-card stat-ditolak">
+            <div class="stat-number"><?= $stats['ditolak'] ?></div>
+            <div class="stat-label">Ditolak</div>
         </div>
     </div>
 
@@ -692,10 +703,11 @@ body {
                 <?php
                 $status_icons = [
                     'pending' => 'fa-clock',
-                    'diproses' => 'fa-clock',
                     'diterima' => 'fa-check-circle',
-                    'ditolak' => 'fa-times-circle',
-                    'selesai' => 'fa-flag-checkered'
+                    'diproses' => 'fa-cog fa-spin',
+                    'dikirim' => 'fa-truck',
+                    'selesai' => 'fa-flag-checkered',
+                    'ditolak' => 'fa-times-circle'
                 ];
                 $icon = $status_icons[strtolower($row['status'])] ?? 'fa-question-circle';
                 ?>
